@@ -400,6 +400,7 @@ var ListView = React.createClass({
           break;
         }
       }
+      //只渲染到当前需要渲染的最大值
       if (rowCount >= this.state.curRenderedRowsCount) {
         break;
       }
@@ -526,6 +527,15 @@ var ListView = React.createClass({
     return maxLength - scrollProperties.visibleLength - scrollProperties.offset;
   },
 
+/**
+更新可视rows 获得 this._visibleRows: { //列出可见的row
+  sectionID: {
+    rowID: bool //行是否可视 
+  }
+}
+
+changedRows[sectionID][rowID] = bool  标记某个row可见性是否改变
+*/
   _updateVisibleRows: function(updatedFrames) {
     if (!this.props.onChangeVisibleRows) {
       return; // No need to compute visible rows if there is no callback
