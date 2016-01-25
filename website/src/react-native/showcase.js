@@ -217,6 +217,12 @@ var apps = [
     author: 'Liubomyr Mykhalchenko (@liubko)',
   },
   {
+    name: 'Feline for Product Hunt',
+    icon: 'https://lh3.googleusercontent.com/MCoiCCwUan0dxzqRR_Mrr7kO308roYdI2aTsIpUGYWzUmpJT1-R2_J04weQKFEd3Mg=w300-rw',
+    link: 'https://play.google.com/store/apps/details?id=com.arjunkomath.product_hunt&hl=en',
+    author: 'Arjun Komath',
+  },
+  {
     name: 'Foodstand',
     icon: 'http://a3.mzstatic.com/us/r30/Purple69/v4/33/c1/3b/33c13b88-8ec2-23c1-56bb-712ad9938290/icon350x350.jpeg',
     link: 'https://www.thefoodstand.com/download',
@@ -245,6 +251,12 @@ var apps = [
     icon: 'https://raw.githubusercontent.com/scrollback/io.scrollback.neighborhoods/master/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png',
     link: 'https://play.google.com/store/apps/details?id=io.scrollback.neighborhoods',
     author: 'Scrollback',
+  },
+  {
+    name: 'Honest Reviews',
+    icon: 'http://honestreviews.techulus.com/icon.png',
+    link: 'https://play.google.com/store/apps/details?id=com.techulus.honestreviews&hl=en',
+    author: 'Arjun Komath',
   },
   {
     name: 'HSK Level 1 Chinese Flashcards',
@@ -332,6 +344,12 @@ var apps = [
     link: 'https://itunes.apple.com/cn/app/mockingbot/id1050565468?l=en&mt=8',
     author: 'YuanYi Zhang (@mockingbot)',
   },
+	{
+		name: 'MoneyLion',
+		icon: 'http://a5.mzstatic.com/us/r30/Purple69/v4/d7/9d/ad/d79daddc-8d67-8a6c-61e2-950425946dd2/icon350x350.jpeg',
+		link: 'https://itunes.apple.com/us/app/moneylion/id1064677082?mt=8',
+		author: 'MoneyLion LLC',
+	},
   {
     name: 'Mr. Dapper',
     icon: 'http://is5.mzstatic.com/image/pf/us/r30/Purple4/v4/e8/3f/7c/e83f7cb3-2602-f8e8-de9a-ce0a775a4a14/mzl.hmdjhfai.png',
@@ -415,6 +433,12 @@ var apps = [
     icon: 'http://a5.mzstatic.com/us/r30/Purple3/v4/51/ca/49/51ca4924-61c8-be1d-ab6d-afa510b1d393/icon175x175.jpeg',
     link: 'https://itunes.apple.com/us/app/rota-worker-shifts-on-demand/id1042111289?mt=8',
     author: 'Rota',
+  },
+  {
+    name: 'Round - A better way to remember your medicine',
+    icon: 'https://s3.mzstatic.com/us/r30/Purple69/v4/d3/ee/54/d3ee54cf-13b6-5f56-0edc-6c70ac90b2be/icon175x175.png',
+    link: 'https://itunes.apple.com/us/app/round-beautiful-medication/id1059591124?mt=8',
+    author: 'Circadian Design',
   },
   {
     name: 'RWpodPlayer - audio player for RWpod podcast',
@@ -513,6 +537,13 @@ var apps = [
     icon: 'http://7xk1ez.com2.z0.glb.qiniucdn.com/logo-mobile-0114logo_welcom.png',
     link: 'https://itunes.apple.com/us/app/ni-zao-me/id1025294933?l=zh&ls=1&mt=8',
     author: 'Scott Chen(@NZAOM)'
+  },
+  {
+    name: 'うたよみん',
+    icon: 'http://a4.mzstatic.com/jp/r30/Purple69/v4/19/8f/fa/198ffafe-66a6-d682-c8d1-47faf2b0badb/icon175x175.jpeg',
+    linkAppStore: 'https://itunes.apple.com/jp/app/minnano-duan-ge-tou-gaokomyuniti/id675671254?mt=8',
+    linkPlayStore: 'https://play.google.com/store/apps/details?id=com.plasticaromantica.utayomin',
+    author: 'Takayuki IMAI'
   }
 ];
 

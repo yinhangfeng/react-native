@@ -16,6 +16,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -108,6 +109,7 @@ public class ReactImageView extends GenericDraweeView {
   private @Nullable Uri mUri;
   private @Nullable Drawable mLoadingImageDrawable;
   private int mBorderColor;
+  private int mOverlayColor;
   private float mBorderWidth;
   private float mBorderRadius;
   private ScalingUtils.ScaleType mScaleType;
@@ -183,6 +185,11 @@ public class ReactImageView extends GenericDraweeView {
 
   public void setBorderColor(int borderColor) {
     mBorderColor = borderColor;
+    mIsDirty = true;
+  }
+
+  public void setOverlayColor(int overlayColor) {
+    mOverlayColor = overlayColor;
     mIsDirty = true;
   }
 
@@ -266,6 +273,12 @@ public class ReactImageView extends GenericDraweeView {
     RoundingParams roundingParams = hierarchy.getRoundingParams();
     roundingParams.setCornersRadius(hierarchyRadius);
     roundingParams.setBorder(mBorderColor, mBorderWidth);
+    if (mOverlayColor != Color.TRANSPARENT) {
+        roundingParams.setOverlayColor(mOverlayColor);
+    } else {
+        // make sure the default rounding method is used.
+        roundingParams.setRoundingMethod(RoundingParams.RoundingMethod.BITMAP_ONLY);
+    }
     hierarchy.setRoundingParams(roundingParams);
     hierarchy.setFadeDuration(
         mFadeDurationMs >= 0
@@ -279,6 +292,7 @@ public class ReactImageView extends GenericDraweeView {
     ImageRequest imageRequest = ImageRequestBuilder.newBuilderWithSource(mUri)
         .setPostprocessor(postprocessor)
         .setResizeOptions(resizeOptions)
+        .setAutoRotateEnabled(true)
         .setProgressiveRenderingEnabled(mProgressiveRenderingEnabled)
         .build();
 
@@ -351,11 +365,11 @@ public class ReactImageView extends GenericDraweeView {
     return resId > 0 ? context.getResources().getDrawable(resId) : null;
   }
 
-  private static @Nullable Uri getResourceDrawableUri(Context context, @Nullable String name) {
+  private static Uri getResourceDrawableUri(Context context, @Nullable String name) {
     int resId = getResourceDrawableId(context, name);
     return resId > 0 ? new Uri.Builder()
         .scheme(UriUtil.LOCAL_RESOURCE_SCHEME)
         .path(String.valueOf(resId))
-        .build() : null;
+        .build() : Uri.EMPTY;
   }
 }

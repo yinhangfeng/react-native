@@ -10,6 +10,7 @@
 
 jest.dontMock('../')
   .dontMock('underscore')
+  .dontMock('PixelRatio')
   .dontMock('../../DependencyResolver/lib/extractRequires')
   .dontMock('../../DependencyResolver/lib/replacePatterns');
 
@@ -55,6 +56,14 @@ describe('Resolver', function() {
     module.getName.mockImpl(() => Promise.resolve(id));
     module.getDependencies.mockImpl(() => Promise.resolve(dependencies));
     return module;
+  }
+
+  function createPolyfill(id, dependencies) {
+    var polyfill = new Polyfill({});
+    polyfill.getName.mockImpl(() => Promise.resolve(id));
+    polyfill.getDependencies.mockImpl(() => Promise.resolve(dependencies));
+    polyfill.isPolyfill.mockReturnValue(true);
+    return polyfill;
   }
 
   describe('getDependencies', function() {
@@ -1017,6 +1026,27 @@ describe('Resolver', function() {
           'require("b" )',
           '});',
         ].join('\n'));
+      });
+    });
+
+    pit('should resolve polyfills', function () {
+      const depResolver = new Resolver({
+        projectRoot: '/root',
+      });
+      const polyfill = createPolyfill('test polyfill', []);
+      const code = [
+        'global.fetch = () => 1;',
+      ].join('');
+      return depResolver.wrapModule(
+        null,
+        polyfill,
+        code
+      ).then(processedCode => {
+        expect(processedCode.code).toEqual([
+          '(function(global) {',
+          'global.fetch = () => 1;',
+          "\n})(typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : this);",
+        ].join(''));
       });
     });
   });
