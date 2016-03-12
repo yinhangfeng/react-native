@@ -12,6 +12,10 @@ const getInverseDependencies = require('node-haste').getInverseDependencies;
 const querystring = require('querystring');
 const url = require('url');
 
+const blacklist = [
+  'Libraries/Utilities/HMRClient.js',
+];
+
 /**
  * Attaches a WebSocket based connection to the Packager to expose
  * Hot Module Replacement updates to the simulator.
@@ -32,6 +36,7 @@ function attachHMRServer({httpServer, path, packagerServer}) {
     return packagerServer.getDependencies({
       platform: platform,
       dev: true,
+      hot: true,
       entryFile: bundleEntry,
     }).then(response => {
       // for each dependency builds the object:
@@ -57,12 +62,16 @@ function attachHMRServer({httpServer, path, packagerServer}) {
 
         // map from module name to path
         const moduleToFilenameCache = Object.create(null);
-        deps.forEach(dep => moduleToFilenameCache[dep.name] = dep.path);
+        deps.forEach(dep => {
+          moduleToFilenameCache[dep.name] = dep.path;
+        });
 
         // map that indicates the shallow dependency each file included on the
         // bundle has
         const shallowDependencies = Object.create(null);
-        deps.forEach(dep => shallowDependencies[dep.path] = dep.deps);
+        deps.forEach(dep => {
+          shallowDependencies[dep.path] = dep.deps;
+        });
 
         // map from module name to the modules' dependencies the bundle entry
         // has
@@ -123,6 +132,14 @@ function attachHMRServer({httpServer, path, packagerServer}) {
             `[Hot Module Replacement] File change detected (${time()})`
           );
 
+          const blacklisted = blacklist.find(blacklistedPath =>
+            filename.indexOf(blacklistedPath) !== -1
+          );
+
+          if (blacklisted) {
+            return;
+          }
+
           client.ws.send(JSON.stringify({type: 'update-start'}));
           stat.then(() => {
             return packagerServer.getShallowDependencies(filename)
@@ -143,6 +160,7 @@ function attachHMRServer({httpServer, path, packagerServer}) {
                   return packagerServer.getDependencies({
                     platform: client.platform,
                     dev: true,
+                    hot: true,
                     entryFile: filename,
                     recursive: true,
                   }).then(response => {
@@ -156,10 +174,10 @@ function attachHMRServer({httpServer, path, packagerServer}) {
                 // dependencies we used to have with the one we now have
                 return getDependencies(client.platform, client.bundleEntry)
                   .then(({
-                    dependenciesCache,
-                    dependenciesModulesCache,
-                    shallowDependencies,
-                    inverseDependenciesCache,
+                    depsCache,
+                    depsModulesCache,
+                    shallowDeps,
+                    inverseDepsCache,
                     resolutionResponse,
                   }) => {
                     if (!client) {
@@ -168,16 +186,27 @@ function attachHMRServer({httpServer, path, packagerServer}) {
 
                     // build list of modules for which we'll send HMR updates
                     const modulesToUpdate = [packagerServer.getModuleForPath(filename)];
-                    Object.keys(dependenciesModulesCache).forEach(module => {
-                      if (!client.dependenciesModulesCache[module]) {
-                        modulesToUpdate.push(dependenciesModulesCache[module]);
+                    Object.keys(depsModulesCache).forEach(module => {
+                      if (!client.depsModulesCache[module]) {
+                        modulesToUpdate.push(depsModulesCache[module]);
                       }
                     });
 
+                    // Need to send modules to the client in an order it can
+                    // process them: if a new dependency graph was uncovered
+                    // because a new dependency was added, the file that was
+                    // changed, which is the root of the dependency tree that
+                    // will be sent, needs to be the last module that gets
+                    // processed. Reversing the new modules makes sense
+                    // because we get them through the resolver which returns
+                    // a BFS ordered list.
+                    modulesToUpdate.reverse();
+
                     // invalidate caches
-                    client.dependenciesCache = dependenciesCache;
-                    client.dependenciesModulesCache = dependenciesModulesCache;
-                    client.shallowDependencies = shallowDependencies;
+                    client.dependenciesCache = depsCache;
+                    client.dependenciesModulesCache = depsModulesCache;
+                    client.shallowDependencies = shallowDeps;
+                    client.inverseDependenciesCache = inverseDepsCache;
 
                     return resolutionResponse.copy({
                       dependencies: modulesToUpdate
@@ -204,13 +233,11 @@ function attachHMRServer({httpServer, path, packagerServer}) {
                   packagerHost = httpServerAddress.address;
                 }
 
-                let packagerPort = httpServerAddress.port;
-
                 return packagerServer.buildBundleForHMR({
                   entryFile: client.bundleEntry,
                   platform: client.platform,
                   resolutionResponse,
-                }, packagerHost, packagerPort);
+                }, packagerHost, httpServerAddress.port);
               })
               .then(bundle => {
                 if (!client || !bundle || bundle.isEmpty()) {
@@ -221,7 +248,7 @@ function attachHMRServer({httpServer, path, packagerServer}) {
                   type: 'update',
                   body: {
                     modules: bundle.getModulesNamesAndCode(),
-                    inverseDependencies: inverseDependenciesCache,
+                    inverseDependencies: client.inverseDependenciesCache,
                     sourceURLs: bundle.getSourceURLs(),
                     sourceMappingURLs: bundle.getSourceMappingURLs(),
                   },

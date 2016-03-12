@@ -15,7 +15,7 @@
  */
 'use strict';
 
-const React = require('react');
+const React = require('react-native');
 
 export type UIExplorerExample = {
   key: string;
@@ -161,6 +161,10 @@ const APIExamples = [
   {
     key: 'ToastAndroidExample',
     module: require('./ToastAndroidExample'),
+  },
+  {
+    key: 'VibrationExample',
+    module: require('./VibrationExample'),
   },
   {
     key: 'XHRExample',
