@@ -37,7 +37,7 @@ const NavigationAnimatedView = require('NavigationAnimatedView');
 const NavigationCard = require('NavigationCard');
 const NavigationCardStackStyleInterpolator = require('NavigationCardStackStyleInterpolator');
 const NavigationContainer = require('NavigationContainer');
-const NavigationLinearPanResponder = require('NavigationLinearPanResponder');
+const NavigationCardStackPanResponder = require('NavigationCardStackPanResponder');
 const NavigationPropTypes = require('NavigationPropTypes');
 const React = require('React');
 const ReactComponentWithPureRenderMixin = require('ReactComponentWithPureRenderMixin');
@@ -46,7 +46,7 @@ const StyleSheet = require('StyleSheet');
 const emptyFunction = require('fbjs/lib/emptyFunction');
 
 const {PropTypes} = React;
-const {Directions} = NavigationLinearPanResponder;
+const {Directions} = NavigationCardStackPanResponder;
 
 import type {
   NavigationAnimatedValue,
@@ -58,7 +58,7 @@ import type {
 
 import type {
   NavigationGestureDirection,
-} from 'NavigationLinearPanResponder';
+} from 'NavigationCardStackPanResponder';
 
 type Props = {
   direction: NavigationGestureDirection,
@@ -80,7 +80,18 @@ const defaultProps = {
 };
 
 /**
- * A controlled navigation view that renders a list of cards.
+ * A controlled navigation view that renders a stack of cards.
+ *
+ *     +------------+
+ *   +-+            |
+ * +-+ |            |
+ * | | |            |
+ * | | |  Focused   |
+ * | | |   Card     |
+ * | | |            |
+ * +-+ |            |
+ *   +-+            |
+ *     +------------+
  */
 class NavigationCardStack extends React.Component {
   _applyAnimation: NavigationAnimationSetter;
@@ -123,13 +134,13 @@ class NavigationCardStack extends React.Component {
       NavigationCardStackStyleInterpolator.forHorizontal(props);
 
     const panHandlers = isVertical ?
-      NavigationLinearPanResponder.forVertical(props) :
-      NavigationLinearPanResponder.forHorizontal(props);
+      NavigationCardStackPanResponder.forVertical(props) :
+      NavigationCardStackPanResponder.forHorizontal(props);
 
     return (
       <NavigationCard
         {...props}
-        key={'card_' + props.scene.navigationState.key}
+        key={'card_' + props.scene.key}
         panHandlers={panHandlers}
         renderScene={this.props.renderScene}
         style={style}

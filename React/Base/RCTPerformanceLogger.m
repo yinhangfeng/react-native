@@ -15,7 +15,7 @@
 #import "RCTProfile.h"
 
 static int64_t RCTPLData[RCTPLSize][2] = {};
-static int64_t RCTPLCookies[RCTPLSize] = {};
+static NSUInteger RCTPLCookies[RCTPLSize] = {};
 
 void RCTPerformanceLoggerStart(RCTPLTag tag)
 {
@@ -78,6 +78,8 @@ NSArray<NSNumber *> *RCTPerformanceLoggerOutput(void)
     @(RCTPLData[RCTPLNativeModulePrepareConfig][1]),
     @(RCTPLData[RCTPLNativeModuleInjectConfig][0]),
     @(RCTPLData[RCTPLNativeModuleInjectConfig][1]),
+    @(RCTPLData[RCTPLNativeModuleMainThreadUsesCount][0]),
+    @(RCTPLData[RCTPLNativeModuleMainThreadUsesCount][1]),
     @(RCTPLData[RCTPLJSCExecutorSetup][0]),
     @(RCTPLData[RCTPLJSCExecutorSetup][1]),
     @(RCTPLData[RCTPLTTI][0]),
@@ -99,6 +101,7 @@ NSArray *RCTPerformanceLoggerLabels(void)
       @"NativeModuleMainThread",
       @"NativeModulePrepareConfig",
       @"NativeModuleInjectConfig",
+      @"NativeModuleMainThreadUsesCount",
       @"JSCExecutorSetup",
       @"RootViewTTI",
       @"BundleSize",
