@@ -200,6 +200,7 @@ public class ForwardingCookieHandler extends CookieHandler {
       });
     }
 
+    //在每次cookie修改30s后 sync,会比 syncManager.startSync() 效果好?
     public void onCookiesModified() {
       if (USES_LEGACY_STORE) {
         mHandler.sendEmptyMessageDelayed(MSG_PERSIST_COOKIES, TIMEOUT);

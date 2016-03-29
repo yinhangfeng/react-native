@@ -32,9 +32,9 @@ type FormDataPart = {
  * Example:
  *
  *   var photo = {
- *     uri: uriFromCameraRoll,
- *     type: 'image/jpeg',
- *     name: 'photo.jpg',
+ *     uri: uriFromCameraRoll, //文件native uri
+ *     type: 'image/jpeg',  //content-type
+ *     name: 'photo.jpg',  //filename
  *   };
  *
  *   var body = new FormData();
