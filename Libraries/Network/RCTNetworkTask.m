@@ -11,6 +11,7 @@
 
 #import "RCTLog.h"
 
+//为什么不直接让RCTNetworkTask 继承自NSURLSessionDataTask？
 @implementation RCTNetworkTask
 {
   NSMutableData *_data;

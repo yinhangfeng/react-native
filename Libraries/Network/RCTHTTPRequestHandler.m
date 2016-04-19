@@ -60,6 +60,7 @@ RCT_EXPORT_MODULE()
                                              delegate:self
                                         delegateQueue:callbackQueue];
 
+    //为什么不直接让RCTNetworkTask 继承自NSURLSessionDataTask 在回调时也不需要这个Map
     _delegates = [[NSMapTable alloc] initWithKeyOptions:NSPointerFunctionsStrongMemory
                                            valueOptions:NSPointerFunctionsStrongMemory
                                                capacity:0];
