@@ -15,11 +15,12 @@ const Animated = require('Animated');
 const NavigationContainer = require('NavigationContainer');
 const NavigationPropTypes = require('NavigationPropTypes');
 const NavigationScenesReducer = require('NavigationScenesReducer');
-const React = require('react-native');
+const React = require('React');
 const StyleSheet = require('StyleSheet');
 const View = require('View');
 
 import type {
+  NavigationActionCaller,
   NavigationAnimatedValue,
   NavigationAnimationSetter,
   NavigationLayout,
@@ -31,7 +32,7 @@ import type {
 type Props = {
   applyAnimation: NavigationAnimationSetter,
   navigationState: NavigationParentState,
-  onNavigate: (action: any) => void,
+  onNavigate: NavigationActionCaller,
   renderOverlay: ?NavigationSceneRenderer,
   renderScene: NavigationSceneRenderer,
   style: any,
