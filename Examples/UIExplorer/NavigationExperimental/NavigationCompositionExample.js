@@ -209,6 +209,7 @@ class ExampleTabScreen extends React.Component {
             onNavigate(ExampleInfoAction());
           }}
         />
+        {/*<ReactNative.TextInput style={{width: 200, height: 40}}/>*/}
         <NavigationExampleRow
           text="Open a page in the profile tab"
           onPress={() => {
@@ -273,6 +274,7 @@ class ExampleMainView extends React.Component {
   }
 
   render() {
+    //NavigationView 的renderScene 切换时不能保存状态?
     return (
       <NavigationView
         navigationState={this.props.navigationState}

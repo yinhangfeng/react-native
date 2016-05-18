@@ -67,6 +67,7 @@ function areScenesShallowEqual(
   );
 }
 
+//NavigationView的核心  根据NavigationState生成scene 标记stale
 function NavigationScenesReducer(
   scenes: Array<NavigationScene>,
   nextState: NavigationParentState,

@@ -60,6 +60,7 @@ type Props = {
   /*
    * Set up the rendering of the app for a given navigation state
    */
+   // 可以返回一个自定义布局 或者用NavigationView NavigationAnimatedView NavigationCardStack 等
   renderNavigation: NavigationRenderer,
 };
 
@@ -103,6 +104,7 @@ class NavigationRootContainer extends React.Component<any, Props, State> {
 
     let navState = null;
     if (!this.props.persistenceKey) {
+      //对reducer来说 lastState传入为null 时一般就意味着要返回初始state 所以NavigationRootContainer的initialAction就不那么重要了
       navState = NavigationStateUtils.getParent(
         this.props.reducer(null, props.initialAction)
       );
@@ -116,6 +118,7 @@ class NavigationRootContainer extends React.Component<any, Props, State> {
   }
 
   componentDidMount(): void {
+    //既有InitialURL 又有persistenceKey数据 这时候不会造成重复刷新么?
     if (this.props.linkingActionMap) {
       Linking.getInitialURL().then(this._handleOpenURL.bind(this));
       Platform.OS === 'ios' && Linking.addEventListener('url', this._handleOpenURLEvent);
@@ -162,6 +165,7 @@ class NavigationRootContainer extends React.Component<any, Props, State> {
     };
   }
 
+  //对外暴露的函数 同context.onNavigate
   handleNavigation(action: Object): boolean {
     const navState = this.props.reducer(this.state.navState, action);
     if (navState === this.state.navState) {
@@ -173,6 +177,7 @@ class NavigationRootContainer extends React.Component<any, Props, State> {
     });
 
     if (this.props.persistenceKey) {
+      //持久化navState
       AsyncStorage.setItem(this.props.persistenceKey, JSON.stringify(navState));
     }
 

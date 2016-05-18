@@ -85,6 +85,8 @@ class NavigationCard extends React.Component<any, Props, any> {
   }
 
   render(): ReactElement {
+    //console.log('NavigationCard render', this.props.scene);
+
     const {
       panHandlers,
       pointerEvents,

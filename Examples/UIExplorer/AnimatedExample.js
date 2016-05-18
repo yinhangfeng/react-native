@@ -26,6 +26,40 @@ var {
 } = ReactNative;
 var UIExplorerButton = require('./UIExplorerButton');
 
+class MyTest extends React.Component {
+
+  constructor(props) {
+    super(props);
+    let inputRange = [5, 6, 7];
+    let outputRange = [100, 0, -10];
+    this._value1 = new Animated.Value(4);
+    this._iValue1 = this._value1.interpolate({
+      inputRange,
+      outputRange,
+    });
+    this._value1.addListener((data) => {
+      console.log('_value1 ', data.value, ' _iValue1', this._iValue1.__getValue());
+    });
+  }
+
+  render() {
+    return (
+      <UIExplorerButton onPress={() => {
+          Animated.timing(
+            this._value1,
+            {
+              toValue: 8,
+              duration: 5000
+            }
+          )
+          .start();
+        }}>
+        test interpolate
+      </UIExplorerButton>
+    );
+  }
+}
+
 exports.framework = 'React';
 exports.title = 'Animated - Examples';
 exports.description = 'Animated provides a powerful ' +
@@ -220,7 +254,14 @@ exports.examples = [
     render: () => (
       <Text>Checkout the Gratuitous Animation App!</Text>
     ),
-  }
+  },
+  {
+    title: 'MyTest',
+    description: 'MyTest',
+    render: () => (
+      <MyTest/>
+    ),
+  },
 ];
 
 var styles = StyleSheet.create({

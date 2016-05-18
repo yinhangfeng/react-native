@@ -50,7 +50,9 @@ class NavButton extends React.Component {
 }
 
 class NavMenu extends React.Component {
+
   render() {
+    console.log('NavMenu render ', this.props.route);
     return (
       <ScrollView style={styles.scene}>
         <Text style={styles.messageText}>{this.props.message}</Text>
@@ -122,6 +124,7 @@ var TabBarExample = React.createClass({
   },
 
   renderScene: function(route, nav) {
+    console.log('renderScene ', route);
     switch (route.id) {
       case 'navbar':
         return <NavigationBarSample navigator={nav} />;
@@ -132,6 +135,7 @@ var TabBarExample = React.createClass({
       default:
         return (
           <NavMenu
+            route={route}
             message={route.message}
             navigator={nav}
             onExampleExit={this.props.onExampleExit}

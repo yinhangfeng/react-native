@@ -51,6 +51,7 @@ export type StackReducerConfig = {
    * Returns the sub-reducer for a particular state to handle. This will be called
    * when we need to handle an action on a sub-state. If no reducer is returned,
    * no action will be taken
+   * 主要用于一个新的action来的时候 处理当前激活的state的变化,一般使用defaultGetReducerForState就可以
    */
   getReducerForState?: ReducerForStateHandler;
 
@@ -63,6 +64,7 @@ export type StackReducerConfig = {
 
 const defaultGetReducerForState = (initialState) => (state) => state || initialState;
 
+//push pop 或者改变当前栈顶 操作不够自由
 function NavigationStackReducer({initialState, getReducerForState, getPushedReducerForAction}: StackReducerConfig): NavigationReducer {
   const getReducerForStateWithDefault = getReducerForState || defaultGetReducerForState;
   return function (lastState: ?NavigationState, action: any): NavigationState {
@@ -77,7 +79,7 @@ function NavigationStackReducer({initialState, getReducerForState, getPushedRedu
     const activeSubState = lastParentState.children[lastParentState.index];
     const activeSubReducer = getReducerForStateWithDefault(activeSubState);
     const nextActiveState = activeSubReducer(activeSubState, action);
-    if (nextActiveState !== activeSubState) {
+    if (nextActiveState !== activeSubState) { //当前action 是改变堆栈顶部的action，堆栈大小不变
       const nextChildren = [...lastParentState.children];
       nextChildren[lastParentState.index] = nextActiveState;
       return {
@@ -86,6 +88,7 @@ function NavigationStackReducer({initialState, getReducerForState, getPushedRedu
       };
     }
 
+    //获取新push 场景的reducer
     const subReducerToPush = getPushedReducerForAction(action, lastParentState);
     if (subReducerToPush) {
       return NavigationStateUtils.push(

@@ -47,6 +47,7 @@ const {PropTypes} = React;
  * A simple view that will render a scene for the currently focused sub-state.
  * The most common use-case is for tabs, where no transition is needed
  */
+// 简单的实现 无堆栈  每一个scene都会重新渲染
 class NavigationView extends React.Component<any, Props, any> {
   _onLayout: (event: any) => void;
   _position: NavigationAnimatedValue;
@@ -123,7 +124,7 @@ class NavigationView extends React.Component<any, Props, any> {
     } = this.state;
 
     const sceneProps = {
-      layout,
+      layout, //_renderScene 有需要才使用
       navigationState: navigationState,
       onNavigate: onNavigate,
       position: this._position,

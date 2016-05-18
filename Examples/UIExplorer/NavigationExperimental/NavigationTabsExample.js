@@ -38,6 +38,7 @@ class ExmpleTabPage extends React.Component {
         <NavigationExampleRow
           text={`Current Tab is: ${currentTabRoute.key}`}
         />
+        {/*<ReactNative.TextInput style={{width: 200, height: 40}} />*/}
         {this.props.tabs.map((tab, index) => (
           <NavigationExampleRow
             key={tab.key}

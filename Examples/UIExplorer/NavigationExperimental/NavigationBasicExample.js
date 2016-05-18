@@ -52,12 +52,14 @@ const NavigationBasicExample = React.createClass({
         persistenceKey="NavigationBasicExampleState"
         ref={navRootContainer => { this.navRootContainer = navRootContainer; }}
         renderNavigation={(navState, onNavigate) => {
+          //renderNavigation 不会管理堆栈
           if (!navState) { return null; }
           return (
             <ScrollView style={styles.topView}>
               <NavigationExampleRow
                 text={`Current page: ${navState.children[navState.index].key}`}
               />
+              {/*<ReactNative.TextInput style={{width: 200, height: 40}}/>*/}
               <NavigationExampleRow
                 text={`Push page #${navState.children.length}`}
                 onPress={() => {

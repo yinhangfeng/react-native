@@ -14,6 +14,7 @@
 var React = require('React');
 var NavigationRootContainer = require('NavigationRootContainer');
 
+//主要处理onNavigate上下文和属性的传递
 function createNavigationContainer(
   Component: ReactClass<any>,
 ): ReactClass & Object {

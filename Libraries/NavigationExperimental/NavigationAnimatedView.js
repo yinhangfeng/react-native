@@ -143,6 +143,7 @@ class NavigationAnimatedView
       return;
     }
 
+    // 在position足够接近当前显示的index时 移除stale的scene
     const scenes = this.state.scenes.filter(scene => {
       return !scene.isStale;
     });

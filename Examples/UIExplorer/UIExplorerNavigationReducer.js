@@ -31,6 +31,7 @@ import type {NavigationState} from 'NavigationTypeDefinition';
 
 import type {UIExplorerAction} from './UIExplorerActions';
 
+//NavigationState应该至少有一个key 属性，这是不是不太符合标准
 export type UIExplorerNavigationState = {
   externalExample: ?string;
   stack: NavigationState;
@@ -57,6 +58,8 @@ const UIExplorerStackReducer = StackReducer({
   },
 });
 
+//UIExplorer的主Navigation 的state 不是标准的NavigationParentState 内部的stack才是, 所以state 其实可由Reducer定义,
+//只是在NavigationRootContainer的renderNavigation中需要相应调整
 function UIExplorerNavigationReducer(lastState: ?UIExplorerNavigationState, action: any): UIExplorerNavigationState {
   if (!lastState) {
     return {
