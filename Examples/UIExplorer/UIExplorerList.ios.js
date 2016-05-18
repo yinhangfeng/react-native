@@ -1,4 +1,11 @@
 /**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
  * The examples provided by Facebook are for non-commercial testing and
  * evaluation purposes only.
  *
@@ -20,7 +27,7 @@ export type UIExplorerExample = {
   module: Object;
 };
 
-var ComponentExamples: Array<UIExplorerExample> = [
+const ComponentExamples: Array<UIExplorerExample> = [
   {
     key: 'MyTest',
     module: require('./MyTest'),
@@ -72,6 +79,10 @@ var ComponentExamples: Array<UIExplorerExample> = [
   {
     key: 'NavigatorIOSExample',
     module: require('./NavigatorIOSExample'),
+  },
+  {
+    key: 'PickerExample',
+    module: require('./PickerExample'),
   },
   {
     key: 'PickerIOSExample',
@@ -135,7 +146,7 @@ var ComponentExamples: Array<UIExplorerExample> = [
   },
 ];
 
-var APIExamples: Array<UIExplorerExample> = [
+const APIExamples: Array<UIExplorerExample> = [
   {
     key: 'AccessibilityIOSExample',
     module: require('./AccessibilityIOSExample'),
@@ -147,6 +158,10 @@ var APIExamples: Array<UIExplorerExample> = [
   {
     key: 'AdSupportIOSExample',
     module: require('./AdSupportIOSExample'),
+  },
+  {
+    key: 'AlertExample',
+    module: require('./AlertExample').AlertExample,
   },
   {
     key: 'AlertIOSExample',
@@ -211,10 +226,6 @@ var APIExamples: Array<UIExplorerExample> = [
   {
     key: 'NavigationExperimentalExample',
     module: require('./NavigationExperimental/NavigationExperimentalExample'),
-  },
-  {
-    key: 'NavigationExperimentalLegacyNavigatorExample',
-    module: require('./NavigationExperimental/LegacyNavigator/LegacyNavigatorExample'),
   },
   {
     key: 'NetInfoExample',
