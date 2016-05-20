@@ -11,6 +11,11 @@
  */
 'use strict';
 
+/**
+ * WARNING: NavigationAnimatedView will be deprecated soon.
+ * Use NavigationTransitioner instead.
+ */
+
 const Animated = require('Animated');
 const NavigationPropTypes = require('NavigationPropTypes');
 const NavigationScenesReducer = require('NavigationScenesReducer');
@@ -40,6 +45,7 @@ type Props = {
 type State = {
   layout: NavigationLayout,
   position: NavigationAnimatedValue,
+  progress: NavigationAnimatedValue,
   scenes: Array<NavigationScene>,
 };
 
@@ -96,6 +102,9 @@ class NavigationAnimatedView
     this.state = {
       layout,
       position: new Animated.Value(this.props.navigationState.index),
+      // This `progress` is a adummy placeholder value to meet the values
+      // as `NavigationSceneRendererProps` requires.
+      progress: new Animated.Value(1),
       scenes: NavigationScenesReducer([], this.props.navigationState),
     };
   }
@@ -180,6 +189,7 @@ class NavigationAnimatedView
 
     const {
       position,
+      progress,
       scenes,
     } = this.state;
 
@@ -188,6 +198,7 @@ class NavigationAnimatedView
       navigationState,
       onNavigate,
       position,
+      progress,
       scene,
       scenes,
     });
@@ -203,6 +214,7 @@ class NavigationAnimatedView
 
       const {
         position,
+        progress,
         scenes,
       } = this.state;
 
@@ -211,6 +223,7 @@ class NavigationAnimatedView
         navigationState,
         onNavigate,
         position,
+        progress,
         scene: scenes[navigationState.index],
         scenes,
       });
