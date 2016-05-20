@@ -71,6 +71,17 @@ var LayoutExample = React.createClass({
   render: function() {
     return (
       <UIExplorerPage title={this.props.navigator ? null : 'Layout'}>
+
+        <UIExplorerBlock title="Flex grow shrink">
+          <View style={{height: 50, alignSelf: 'stretch', flexDirection: 'row'}}>
+            <View style={{width: 100, backgroundColor: '#9F5C5A',}}></View>
+            <View style={{width: 100, backgroundColor: '#AF4F4C',}}></View>
+            <View style={{width: 100, backgroundColor: '#5A9B9F',}}></View>
+            <View style={{width: 100, backgroundColor: '#5A5D9F',}}></View>
+            <View style={{width: 100, backgroundColor: '#9F5A7F',}}></View>
+          </View>
+        </UIExplorerBlock>
+
         <UIExplorerBlock title="Flex Direction">
           <Text>row</Text>
           <CircleBlock style={{flexDirection: 'row'}}>

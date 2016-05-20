@@ -101,6 +101,10 @@ const ComponentExamples: Array<UIExplorerExample> = [
     module: require('./ScrollViewExample'),
   },
   {
+    key: 'ScrollViewSimpleExample',
+    module: require('./ScrollViewSimpleExample'),
+  },
+  {
     key: 'SegmentedControlIOSExample',
     module: require('./SegmentedControlIOSExample'),
   },
