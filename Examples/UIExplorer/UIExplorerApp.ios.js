@@ -140,7 +140,7 @@ class UIExplorerApp extends React.Component {
     );
   }
 
-  _renderOverlay(props: NavigationSceneRendererProps): ReactElement {
+  _renderOverlay(props: NavigationSceneRendererProps): ReactElement<any> {
     return (
       <NavigationHeader
         {...props}
@@ -149,16 +149,16 @@ class UIExplorerApp extends React.Component {
     );
   }
 
-  _renderTitleComponent(props: NavigationSceneRendererProps): ReactElement {
+  _renderTitleComponent(props: NavigationSceneRendererProps): ReactElement<any> {
     return (
       <NavigationHeader.Title>
-        {UIExplorerStateTitleMap(props.scene.navigationState)}
+        {UIExplorerStateTitleMap(props.scene.route)}
       </NavigationHeader.Title>
     );
   }
 
-  _renderScene(props: NavigationSceneRendererProps): ?ReactElement {
-    const state = props.scene.navigationState;
+  _renderScene(props: NavigationSceneRendererProps): ?ReactElement<any> {
+    const state = props.scene.route;
     if (state.key === 'AppList') {
       return (
         <UIExplorerExampleList

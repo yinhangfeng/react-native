@@ -606,6 +606,10 @@ changedRows[sectionID][rowID] = bool  标记某个row可见性是否改变
         var rowID = rowIDs[rowIdx];
         var frame = this._childFrames[totalIndex];
         totalIndex++;
+        if(this.props.renderSeparator &&
+           (rowIdx !== rowIDs.length - 1 || sectionIdx === allRowIDs.length - 1)){
+          totalIndex++;
+        }
         if (!frame) {
           break;
         }

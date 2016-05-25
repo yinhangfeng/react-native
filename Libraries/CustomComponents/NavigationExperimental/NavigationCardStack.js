@@ -48,7 +48,7 @@ const {Directions} = NavigationCardStackPanResponder;
 
 import type {
   NavigationActionCaller,
-  NavigationParentState,
+  NavigationState,
   NavigationSceneRenderer,
   NavigationSceneRendererProps,
 } from 'NavigationTypeDefinition';
@@ -59,7 +59,7 @@ import type {
 
 type Props = {
   direction: NavigationGestureDirection,
-  navigationState: NavigationParentState,
+  navigationState: NavigationState,
   onNavigate: NavigationActionCaller,
   renderOverlay: ?NavigationSceneRenderer,
   renderScene: NavigationSceneRenderer,
@@ -91,7 +91,7 @@ class NavigationCardStack extends React.Component<DefaultProps, Props, void> {
 
   static propTypes = {
     direction: PropTypes.oneOf([Directions.HORIZONTAL, Directions.VERTICAL]),
-    navigationState: NavigationPropTypes.navigationParentState.isRequired,
+    navigationState: NavigationPropTypes.navigationState.isRequired,
     onNavigate: NavigationPropTypes.SceneRendererProps.onNavigate,
     renderOverlay: PropTypes.func,
     renderScene: PropTypes.func.isRequired,
@@ -118,7 +118,7 @@ class NavigationCardStack extends React.Component<DefaultProps, Props, void> {
     );
   }
 
-  render(): ReactElement {
+  render(): ReactElement<any> {
     return (
       <NavigationAnimatedView
         navigationState={this.props.navigationState}
@@ -131,7 +131,7 @@ class NavigationCardStack extends React.Component<DefaultProps, Props, void> {
     );
   }
 
-  _renderScene(props: NavigationSceneRendererProps): ReactElement {
+  _renderScene(props: NavigationSceneRendererProps): ReactElement<any> {
     const isVertical = this.props.direction === 'vertical';
 
     const style = isVertical ?

@@ -1,4 +1,11 @@
 /**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
  * The examples provided by Facebook are for non-commercial testing and
  * evaluation purposes only.
  *
@@ -40,7 +47,7 @@ export type UIExplorerNavigationState = {
 const UIExplorerStackReducer = StackReducer({
   getPushedReducerForAction: (action, lastState) => {
     if (action.type === 'UIExplorerExampleAction' && UIExplorerList.Modules[action.openExample]) {
-      if (lastState.children.find(child => child.key === action.openExample)) {
+      if (lastState.routes.find(route => route.key === action.openExample)) {
         // The example is already open, we should avoid pushing examples twice
         return null;
       }
@@ -52,7 +59,7 @@ const UIExplorerStackReducer = StackReducer({
   initialState: {
     key: 'UIExplorerMainStack',
     index: 0,
-    children: [
+    routes: [
       {key: 'AppList'},
     ],
   },
@@ -73,7 +80,7 @@ function UIExplorerNavigationReducer(lastState: ?UIExplorerNavigationState, acti
       stack: {
         key: 'UIExplorerMainStack',
         index: 0,
-        children: [
+        routes: [
           {
             key: 'AppList',
             filter: action.filter,

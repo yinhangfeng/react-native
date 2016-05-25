@@ -7,29 +7,29 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @providesModule NavigationStackReducer
- * @flow
+ * @flow-broken
  */
 'use strict';
 
 const NavigationStateUtils = require('NavigationStateUtils');
 
 import type {
+  NavigationRoute,
   NavigationState,
-  NavigationParentState,
   NavigationReducer,
 } from 'NavigationTypeDefinition';
 
-export type ReducerForStateHandler = (state: NavigationState) => NavigationReducer;
+export type ReducerForStateHandler = (state: NavigationRoute) => NavigationReducer;
 
-export type PushedReducerForActionHandler = (action: any, lastState: NavigationParentState) => ?NavigationReducer;
+export type PushedReducerForActionHandler = (action: any, lastState: NavigationState) => ?NavigationReducer;
 
 export type StackReducerConfig = {
   /*
    * The initialState is that the reducer will use when there is no previous state.
-   * Must be a NavigationParentState:
+   * Must be a NavigationState:
    *
    * {
-   *   children: [
+   *   routes: [
    *     {key: 'subState0'},
    *     {key: 'subState1'},
    *   ],
@@ -37,7 +37,7 @@ export type StackReducerConfig = {
    *   key: 'navStackKey'
    * }
    */
-  initialState: NavigationParentState;
+  initialState: NavigationState;
 
   /*
    * Returns the sub-reducer for a particular state to handle. This will be called
@@ -59,7 +59,7 @@ const defaultGetReducerForState = (initialState) => (state) => state || initialS
 //push pop 或者改变当前栈顶 操作不够自由
 function NavigationStackReducer({initialState, getReducerForState, getPushedReducerForAction}: StackReducerConfig): NavigationReducer {
   const getReducerForStateWithDefault = getReducerForState || defaultGetReducerForState;
-  return function (lastState: ?NavigationState, action: any): NavigationState {
+  return function (lastState: ?NavigationRoute, action: any): NavigationRoute {
     if (!lastState) {
       return initialState;
     }
@@ -68,15 +68,16 @@ function NavigationStackReducer({initialState, getReducerForState, getPushedRedu
       return lastState;
     }
 
-    const activeSubState = lastParentState.children[lastParentState.index];
+    const activeSubState = lastParentState.routes[lastParentState.index];
     const activeSubReducer = getReducerForStateWithDefault(activeSubState);
     const nextActiveState = activeSubReducer(activeSubState, action);
-    if (nextActiveState !== activeSubState) { //当前action 是改变堆栈顶部的action，堆栈大小不变
-      const nextChildren = [...lastParentState.children];
+    //当前action 是改变堆栈顶部的action，堆栈大小不变
+    if (nextActiveState !== activeSubState) {
+      const nextChildren = [...lastParentState.routes];
       nextChildren[lastParentState.index] = nextActiveState;
       return {
         ...lastParentState,
-        children: nextChildren,
+        routes: nextChildren,
       };
     }
 
@@ -92,7 +93,7 @@ function NavigationStackReducer({initialState, getReducerForState, getPushedRedu
     switch (action.type) {
       case 'back':
       case 'BackAction':
-        if (lastParentState.index === 0 || lastParentState.children.length === 1) {
+        if (lastParentState.index === 0 || lastParentState.routes.length === 1) {
           return lastParentState;
         }
         return NavigationStateUtils.pop(lastParentState);
