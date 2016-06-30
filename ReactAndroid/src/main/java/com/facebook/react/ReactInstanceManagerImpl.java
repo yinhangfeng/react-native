@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
+import android.net.Uri;
 
 import com.facebook.common.logging.FLog;
 import com.facebook.infer.annotation.Assertions;
@@ -57,6 +58,7 @@ import com.facebook.react.devsupport.DevServerHelper;
 import com.facebook.react.devsupport.DevSupportManager;
 import com.facebook.react.devsupport.DevSupportManagerFactory;
 import com.facebook.react.devsupport.ReactInstanceDevCommandsHandler;
+import com.facebook.react.devsupport.RedBoxHandler;
 import com.facebook.react.modules.core.DefaultHardwareBackBtnHandler;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.uimanager.AppRegistry;
@@ -67,8 +69,6 @@ import com.facebook.react.uimanager.ViewManager;
 import com.facebook.soloader.SoLoader;
 import com.facebook.systrace.Systrace;
 
-import static com.facebook.react.bridge.ReactMarkerConstants.BUILD_JS_MODULE_CONFIG_END;
-import static com.facebook.react.bridge.ReactMarkerConstants.BUILD_JS_MODULE_CONFIG_START;
 import static com.facebook.react.bridge.ReactMarkerConstants.BUILD_NATIVE_MODULE_REGISTRY_END;
 import static com.facebook.react.bridge.ReactMarkerConstants.BUILD_NATIVE_MODULE_REGISTRY_START;
 import static com.facebook.react.bridge.ReactMarkerConstants.CREATE_CATALYST_INSTANCE_END;
@@ -122,6 +122,7 @@ import static com.facebook.react.bridge.ReactMarkerConstants.RUN_JS_BUNDLE_START
   private final MemoryPressureRouter mMemoryPressureRouter;
   private final @Nullable NativeModuleCallExceptionHandler mNativeModuleCallExceptionHandler;
   private final @Nullable JSCConfig mJSCConfig;
+  private @Nullable RedBoxHandler mRedBoxHandler;
 
   private final ReactInstanceDevCommandsHandler mDevInterface =
       new ReactInstanceDevCommandsHandler() {
@@ -263,6 +264,35 @@ import static com.facebook.react.bridge.ReactMarkerConstants.RUN_JS_BUNDLE_START
   }
 
   /* package */ ReactInstanceManagerImpl(
+    Context applicationContext,
+    @Nullable Activity currentActivity,
+    @Nullable DefaultHardwareBackBtnHandler defaultHardwareBackBtnHandler,
+    @Nullable String jsBundleFile,
+    @Nullable String jsMainModuleName,
+    List<ReactPackage> packages,
+    boolean useDeveloperSupport,
+    @Nullable NotThreadSafeBridgeIdleDebugListener bridgeIdleDebugListener,
+    LifecycleState initialLifecycleState,
+    UIImplementationProvider uiImplementationProvider,
+    NativeModuleCallExceptionHandler nativeModuleCallExceptionHandler,
+    @Nullable JSCConfig jscConfig) {
+
+    this(applicationContext,
+      currentActivity,
+      defaultHardwareBackBtnHandler,
+      jsBundleFile,
+      jsMainModuleName,
+      packages,
+      useDeveloperSupport,
+      bridgeIdleDebugListener,
+      initialLifecycleState,
+      uiImplementationProvider,
+      nativeModuleCallExceptionHandler,
+      jscConfig,
+      null);
+  }
+
+  /* package */ ReactInstanceManagerImpl(
       Context applicationContext,
       @Nullable Activity currentActivity,
       @Nullable DefaultHardwareBackBtnHandler defaultHardwareBackBtnHandler,
@@ -274,7 +304,8 @@ import static com.facebook.react.bridge.ReactMarkerConstants.RUN_JS_BUNDLE_START
       LifecycleState initialLifecycleState,
       UIImplementationProvider uiImplementationProvider,
       NativeModuleCallExceptionHandler nativeModuleCallExceptionHandler,
-      @Nullable JSCConfig jscConfig) {
+      @Nullable JSCConfig jscConfig,
+      @Nullable RedBoxHandler redBoxHandler) {
     initializeSoLoaderIfNecessary(applicationContext);
 
     // TODO(9577825): remove this
@@ -288,11 +319,13 @@ import static com.facebook.react.bridge.ReactMarkerConstants.RUN_JS_BUNDLE_START
     mJSMainModuleName = jsMainModuleName;
     mPackages = packages;
     mUseDeveloperSupport = useDeveloperSupport;
+    mRedBoxHandler = redBoxHandler;
     mDevSupportManager = DevSupportManagerFactory.create(
         applicationContext,
         mDevInterface,
         mJSMainModuleName,
-        useDeveloperSupport);
+        useDeveloperSupport,
+        mRedBoxHandler);
     mBridgeIdleDebugListener = bridgeIdleDebugListener;
     mLifecycleState = initialLifecycleState;
     mUIImplementationProvider = uiImplementationProvider;
@@ -432,6 +465,24 @@ import static com.facebook.react.bridge.ReactMarkerConstants.RUN_JS_BUNDLE_START
     }
   }
 
+  @Override
+  public void onNewIntent(Intent intent) {
+    if (mCurrentReactContext == null) {
+      FLog.w(ReactConstants.TAG, "Instance detached from instance manager");
+    } else {
+      String action = intent.getAction();
+      Uri uri = intent.getData();
+
+      if (Intent.ACTION_VIEW.equals(action) && uri != null) {
+        DeviceEventManagerModule deviceEventManagerModule =
+            Assertions.assertNotNull(mCurrentReactContext).getNativeModule(DeviceEventManagerModule.class);
+        deviceEventManagerModule.emitNewIntentReceived(uri);
+      }
+
+      mCurrentReactContext.onNewIntent(mCurrentActivity, intent);
+    }
+  }
+
   private void toggleElementInspector() {
     if (mCurrentReactContext != null) {
       mCurrentReactContext
@@ -467,7 +518,6 @@ import static com.facebook.react.bridge.ReactMarkerConstants.RUN_JS_BUNDLE_START
   @Override
   public void onHostResume(Activity activity, DefaultHardwareBackBtnHandler defaultBackButtonImpl) {
     UiThreadUtil.assertOnUiThread();
-
 
     mDefaultBackButtonImpl = defaultBackButtonImpl;
     if (mUseDeveloperSupport) {
@@ -800,7 +850,6 @@ import static com.facebook.react.bridge.ReactMarkerConstants.RUN_JS_BUNDLE_START
       Systrace.endSection(Systrace.TRACE_TAG_REACT_JAVA_BRIDGE);
       ReactMarker.logMarker(BUILD_NATIVE_MODULE_REGISTRY_END);
     }
-
 
     NativeModuleCallExceptionHandler exceptionHandler = mNativeModuleCallExceptionHandler != null
         ? mNativeModuleCallExceptionHandler

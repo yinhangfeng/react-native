@@ -25,7 +25,7 @@ class Test extends React.Component {
   }
 }
 
-//如果重新渲染时 某个组件的element返回的就是上次的 则该组件不糊刷新 (shouldComponentUpdate render 都不会调用)
+//如果重新渲染时 某个组件的element返回的就是上次的 则该组件不会刷新 (shouldComponentUpdate render 都不会调用)
 var MyTest = React.createClass({
 
   statics: {

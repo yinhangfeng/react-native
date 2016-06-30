@@ -22,27 +22,84 @@
  */
 'use strict';
 
-const React = require('react');
 const ReactNative = require('react-native');
 // $FlowFixMe : This is a platform-forked component, and flow seems to only run on iOS?
 const UIExplorerList = require('./UIExplorerList');
+
 const {
   NavigationExperimental,
 } = ReactNative;
+
+
 const {
-  Reducer: NavigationReducer,
+  StateUtils: NavigationStateUtils,
 } = NavigationExperimental;
-const StackReducer = NavigationReducer.StackReducer;
 
 import type {NavigationState} from 'NavigationTypeDefinition';
 
-import type {UIExplorerAction} from './UIExplorerActions';
-
-//NavigationState应该至少有一个key 属性，这是不是不太符合标准
 export type UIExplorerNavigationState = {
   externalExample: ?string;
   stack: NavigationState;
 };
+
+const defaultGetReducerForState = (initialState) => (state) => state || initialState;
+
+function getNavigationState(state: any): ?NavigationState {
+  if (
+    (state instanceof Object) &&
+    (state.routes instanceof Array) &&
+    (state.routes[0] !== undefined) &&
+    (typeof state.index === 'number') &&
+    (state.routes[state.index] !== undefined)
+  ) {
+    return state;
+  }
+  return null;
+}
+
+function StackReducer({initialState, getReducerForState, getPushedReducerForAction}: any): Function {
+  const getReducerForStateWithDefault = getReducerForState || defaultGetReducerForState;
+  return function (lastState: ?NavigationState, action: any): NavigationState {
+    if (!lastState) {
+      return initialState;
+    }
+    const lastParentState = getNavigationState(lastState);
+    if (!lastParentState) {
+      return lastState;
+    }
+
+    const activeSubState = lastParentState.routes[lastParentState.index];
+    const activeSubReducer = getReducerForStateWithDefault(activeSubState);
+    const nextActiveState = activeSubReducer(activeSubState, action);
+    if (nextActiveState !== activeSubState) {
+      const nextChildren = [...lastParentState.routes];
+      nextChildren[lastParentState.index] = nextActiveState;
+      return {
+        ...lastParentState,
+        routes: nextChildren,
+      };
+    }
+
+    const subReducerToPush = getPushedReducerForAction(action, lastParentState);
+    if (subReducerToPush) {
+      return NavigationStateUtils.push(
+        lastParentState,
+        subReducerToPush(null, action)
+      );
+    }
+
+    switch (action.type) {
+      case 'back':
+      case 'BackAction':
+        if (lastParentState.index === 0 || lastParentState.routes.length === 1) {
+          return lastParentState;
+        }
+        return NavigationStateUtils.pop(lastParentState);
+    }
+
+    return lastParentState;
+  };
+}
 
 const UIExplorerStackReducer = StackReducer({
   getPushedReducerForAction: (action, lastState) => {
@@ -109,7 +166,7 @@ function UIExplorerNavigationReducer(lastState: ?UIExplorerNavigationState, acti
     return {
       externalExample: null,
       stack: newStack,
-    }
+    };
   }
   return lastState;
 }
