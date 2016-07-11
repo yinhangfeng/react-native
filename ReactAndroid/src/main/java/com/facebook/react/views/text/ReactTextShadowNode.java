@@ -215,7 +215,7 @@ public class ReactTextShadowNode extends LayoutShadowNode {
           // TODO(5578671): Handle text direction (see View#getTextDirectionHeuristic)
           ReactTextShadowNode reactCSSNode = (ReactTextShadowNode) node;
           TextPaint textPaint = sTextPaintInstance;
-          Layout layout;
+          Layout layout; //可以缓存layout?
           Spanned text = Assertions.assertNotNull(
               reactCSSNode.mPreparedSpannableText,
               "Spannable element has not been prepared in onBeforeLayout");
