@@ -410,6 +410,8 @@ import static com.facebook.react.bridge.ReactMarkerConstants.RUN_JS_BUNDLE_START
                     new Runnable() {
                       @Override
                       public void run() {
+                        //如果运行的时候ip没有设置,设备有不支持adb reserve 导致请求失败返回packagerIsRunning == false,就会尝试recreateReactContextInBackgroundFromBundleFile
+                        //而 recreateReactContextInBackgroundFromBundleFile 加载失败会直接throw 导致< 5.0 的android 真实设备无法调试... 所以这里应该加一个mUseDeveloperSupport的判断?
                         if (packagerIsRunning) {
                           mDevSupportManager.handleReloadJS();
                         } else {
