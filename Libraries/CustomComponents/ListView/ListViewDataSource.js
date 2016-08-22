@@ -354,7 +354,7 @@ _dataBlob: {
   */
   sectionIdentities: Array<string>;
 
-//比较前后数据 得到需要更新的数组
+//比较前后数据 得到需要更新的数组 sectionIdentities rowIdentities
   _calculateDirtyArrays(
     prevDataBlob: any,
     prevSectionIDs: Array<string>,
