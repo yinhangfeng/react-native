@@ -113,15 +113,11 @@ class NavMenu extends React.Component {
   }
 }
 
-var TabBarExample = React.createClass({
+class TabBarExample extends React.Component {
+  static title = '<Navigator>';
+  static description = 'JS-implemented navigation';
 
-  statics: {
-    title: '<Navigator>',
-    description: 'JS-implemented navigation',
-  },
-
-  renderScene: function(route, nav) {
-    console.log('renderScene ', route);
+  renderScene = (route, nav) => {
     switch (route.id) {
       case 'navbar':
         return <NavigationBarSample navigator={nav} />;
@@ -139,9 +135,9 @@ var TabBarExample = React.createClass({
           />
         );
     }
-  },
+  };
 
-  render: function() {
+  render() {
     return (
       <Navigator
         ref={this._setNavigatorRef}
@@ -156,14 +152,13 @@ var TabBarExample = React.createClass({
         }}
       />
     );
-  },
+  }
 
-
-  componentWillUnmount: function() {
+  componentWillUnmount() {
     this._listeners && this._listeners.forEach(listener => listener.remove());
-  },
+  }
 
-  _setNavigatorRef: function(navigator) {
+  _setNavigatorRef = (navigator) => {
     if (navigator !== this._navigator) {
       this._navigator = navigator;
 
@@ -185,8 +180,8 @@ var TabBarExample = React.createClass({
         ];
       }
     }
-  },
-});
+  };
+}
 
 var styles = StyleSheet.create({
   messageText: {

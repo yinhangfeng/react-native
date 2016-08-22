@@ -34,12 +34,11 @@ var {
 
 var NUM_ITEMS = 3;
 
-var ScrollViewSimpleExample = React.createClass({
-  statics: {
-    title: '<ScrollView>',
-    description: 'Component that enables scrolling through child components.'
-  },
-  makeItems: function(nItems: number, styles): Array<any> {
+class ScrollViewSimpleExample extends React.Component {
+  static title = '<ScrollView>';
+  static description = 'Component that enables scrolling through child components.';
+
+  makeItems = (nItems: number, styles): Array<any> => {
     var items = [];
     for (var i = 0; i < nItems; i++) {
        items[i] = (
@@ -49,9 +48,9 @@ var ScrollViewSimpleExample = React.createClass({
        );
     }
     return items;
-  },
+  };
 
-  render: function() {
+  render() {
     // One of the items is a horizontal scroll view
     var items = this.makeItems(NUM_ITEMS, styles.itemWrapper);
     // items[4] = (
@@ -70,7 +69,7 @@ var ScrollViewSimpleExample = React.createClass({
 
     return verticalScrollView;
   }
-});
+}
 
 var styles = StyleSheet.create({
   verticalScrollView: {

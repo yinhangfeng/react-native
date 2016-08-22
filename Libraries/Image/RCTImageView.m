@@ -38,6 +38,7 @@ static BOOL RCTShouldReloadImageForSizeChange(CGSize currentSize, CGSize idealSi
 
 @interface RCTImageView ()
 
+@property (nonatomic, strong) RCTImageSource *imageSource;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadStart;
 @property (nonatomic, copy) RCTDirectEventBlock onProgress;
 @property (nonatomic, copy) RCTDirectEventBlock onError;
@@ -148,10 +149,10 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   }
 }
 
-- (void)setSource:(RCTImageSource *)source
+- (void)setSource:(NSArray<RCTImageSource *> *)source
 {
   if (![source isEqual:_source]) {
-    _source = source;
+    _source = [source copy];
     [self reloadImage];
   }
 }
@@ -204,11 +205,51 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   }
 }
 
+- (BOOL)hasMultipleSources
+{
+  return _source.count > 1;
+}
+
+- (RCTImageSource *)imageSourceForSize:(CGSize)size
+{
+  if (![self hasMultipleSources]) {
+    return _source.firstObject;
+  }
+  // Need to wait for layout pass before deciding.
+  if (CGSizeEqualToSize(size, CGSizeZero)) {
+    return nil;
+  }
+  const CGFloat scale = RCTScreenScale();
+  const CGFloat targetImagePixels = size.width * size.height * scale * scale;
+
+  RCTImageSource *bestSource = nil;
+  CGFloat bestFit = CGFLOAT_MAX;
+  for (RCTImageSource *source in _source) {
+    CGSize imgSize = source.size;
+    const CGFloat imagePixels =
+      imgSize.width * imgSize.height * source.scale * source.scale;
+    const CGFloat fit = ABS(1 - (imagePixels / targetImagePixels));
+
+    if (fit < bestFit) {
+      bestFit = fit;
+      bestSource = source;
+    }
+  }
+  return bestSource;
+}
+
+- (BOOL)desiredImageSourceDidChange
+{
+  return ![[self imageSourceForSize:self.frame.size] isEqual:_imageSource];
+}
+
 - (void)reloadImage
 {
   [self cancelImageLoad];
 
-  if (_source && self.frame.size.width > 0 && self.frame.size.height > 0) {
+  _imageSource = [self imageSourceForSize:self.frame.size];
+
+  if (_imageSource && self.frame.size.width > 0 && self.frame.size.height > 0) {
     if (_onLoadStart) {
       _onLoadStart(nil);
     }
@@ -228,67 +269,77 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
     if (!UIEdgeInsetsEqualToEdgeInsets(_capInsets, UIEdgeInsetsZero)) {
       // Don't resize images that use capInsets
       imageSize = CGSizeZero;
-      imageScale = _source.scale;
+      imageScale = _imageSource.scale;
     }
 
-    RCTImageSource *source = _source;
-    CGFloat blurRadius = _blurRadius;
+    RCTImageSource *source = _imageSource;
     __weak RCTImageView *weakSelf = self;
+    RCTImageLoaderCompletionBlock completionHandler = ^(NSError *error, UIImage *loadedImage) {
+      [weakSelf imageLoaderLoadedImage:loadedImage error:error forImageSource:source];
+    };
+
     _reloadImageCancellationBlock =
-    [_bridge.imageLoader loadImageWithURLRequest:_source.request
+    [_bridge.imageLoader loadImageWithURLRequest:source.request
                                             size:imageSize
                                            scale:imageScale
                                          clipped:NO
                                       resizeMode:_resizeMode
                                    progressBlock:progressHandler
-                                 completionBlock:^(NSError *error, UIImage *loadedImage) {
-
-      RCTImageView *strongSelf = weakSelf;
-      void (^setImageBlock)(UIImage *) = ^(UIImage *image) {
-        if (![source isEqual:strongSelf.source]) {
-          // Bail out if source has changed since we started loading
-          return;
-        }
-        if (image.reactKeyframeAnimation) {
-          [strongSelf.layer addAnimation:image.reactKeyframeAnimation forKey:@"contents"];
-        } else {
-          [strongSelf.layer removeAnimationForKey:@"contents"];
-          strongSelf.image = image;
-        }
-        if (error) {
-          if (strongSelf->_onError) {
-            strongSelf->_onError(@{ @"error": error.localizedDescription });
-          }
-        } else {
-          if (strongSelf->_onLoad) {
-            strongSelf->_onLoad(nil);
-          }
-        }
-        if (strongSelf->_onLoadEnd) {
-          strongSelf->_onLoadEnd(nil);
-        }
-      };
-
-      if (blurRadius > __FLT_EPSILON__) {
-        // Blur on a background thread to avoid blocking interaction
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-          UIImage *image = RCTBlurredImageWithRadius(loadedImage, blurRadius);
-          RCTExecuteOnMainQueue(^{
-            setImageBlock(image);
-          });
-        });
-      } else {
-        // No blur, so try to set the image on the main thread synchronously to minimize image
-        // flashing. (For instance, if this view gets attached to a window, then -didMoveToWindow
-        // calls -reloadImage, and we want to set the image synchronously if possible so that the
-        // image property is set in the same CATransaction that attaches this view to the window.)
-        RCTExecuteOnMainQueue(^{
-          setImageBlock(loadedImage);
-        });
-      }
-    }];
+                                 completionBlock:completionHandler];
   } else {
     [self clearImage];
+  }
+}
+
+- (void)imageLoaderLoadedImage:(UIImage *)loadedImage error:(NSError *)error forImageSource:(RCTImageSource *)source
+{
+  if (![source isEqual:_imageSource]) {
+    // Bail out if source has changed since we started loading
+    return;
+  }
+
+  if (error) {
+    if (_onError) {
+      _onError(@{ @"error": error.localizedDescription });
+    }
+    if (_onLoadEnd) {
+      _onLoadEnd(nil);
+    }
+    return;
+  }
+
+  void (^setImageBlock)(UIImage *) = ^(UIImage *image) {
+    if (image.reactKeyframeAnimation) {
+      [self.layer addAnimation:image.reactKeyframeAnimation forKey:@"contents"];
+    } else {
+      [self.layer removeAnimationForKey:@"contents"];
+      self.image = image;
+    }
+
+    if (self->_onLoad) {
+      self->_onLoad(nil);
+    }
+    if (self->_onLoadEnd) {
+      self->_onLoadEnd(nil);
+    }
+  };
+
+  if (_blurRadius > __FLT_EPSILON__) {
+    // Blur on a background thread to avoid blocking interaction
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+      UIImage *blurredImage = RCTBlurredImageWithRadius(loadedImage, self->_blurRadius);
+      RCTExecuteOnMainQueue(^{
+        setImageBlock(blurredImage);
+      });
+    });
+  } else {
+    // No blur, so try to set the image on the main thread synchronously to minimize image
+    // flashing. (For instance, if this view gets attached to a window, then -didMoveToWindow
+    // calls -reloadImage, and we want to set the image synchronously if possible so that the
+    // image property is set in the same CATransaction that attaches this view to the window.)
+    RCTExecuteOnMainQueue(^{
+      setImageBlock(loadedImage);
+    });
   }
 }
 
@@ -304,19 +355,19 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
     CGSize idealSize = RCTTargetSize(imageSize, self.image.scale, frame.size,
                                      RCTScreenScale(), (RCTResizeMode)self.contentMode, YES);
 
-    if (RCTShouldReloadImageForSizeChange(imageSize, idealSize)) {
+    if ([self desiredImageSourceDidChange]) {
+      // Reload to swap to the proper image source.
+      _targetSize = idealSize;
+      [self reloadImage];
+    } else if (RCTShouldReloadImageForSizeChange(imageSize, idealSize)) {
       if (RCTShouldReloadImageForSizeChange(_targetSize, idealSize)) {
-        RCTLogInfo(@"[PERF IMAGEVIEW] Reloading image %@ as size %@", _source.request.URL.absoluteString, NSStringFromCGSize(idealSize));
+        RCTLogInfo(@"[PERF IMAGEVIEW] Reloading image %@ as size %@", _imageSource.request.URL.absoluteString, NSStringFromCGSize(idealSize));
 
         // If the existing image or an image being loaded are not the right
         // size, reload the asset in case there is a better size available.
         _targetSize = idealSize;
         [self reloadImage];
       }
-    } else {
-      // Our existing image is good enough.
-      [self cancelImageLoad];
-      _targetSize = imageSize;
     }
   }
 }
