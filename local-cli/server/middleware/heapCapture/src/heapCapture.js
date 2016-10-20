@@ -114,6 +114,16 @@ function forEachRef(refs, callback) {
   }
 }
 
+function firstRef(refs, callback) {
+  for (const id in refs) {
+    const ref = refs[id];
+    if (callback(id, ref)) {
+      return new RefVisitor(refs, id);
+    }
+  }
+  return new RefVisitor(refs, undefined);
+}
+
 function getInternalInstanceName(visitor) {
   const type = visitor.clone().moveToEdge('_currentElement').moveToEdge('type');
   if (type.getType() === 'string') { // element.type is string
@@ -135,28 +145,28 @@ function getInternalInstanceName(visitor) {
   return '#unknown';
 }
 
-function buildReactComponentTree(visitor, registry) {
+function buildReactComponentTree(visitor, registry, strings) {
   const ref = visitor.getRef();
   if (ref.reactTree || ref.reactParent === undefined) {
     return; // has one or doesn't need one
   }
   const parentVisitor = ref.reactParent;
   if (parentVisitor === null) {
-    ref.reactTree = registry.insert(registry.root, getInternalInstanceName(visitor));
+    ref.reactTree = registry.insert(registry.root, strings.intern(getInternalInstanceName(visitor)));
   } else if (parentVisitor) {
     const parentRef = parentVisitor.getRef();
-    buildReactComponentTree(parentVisitor, registry);
+    buildReactComponentTree(parentVisitor, registry, strings);
     let relativeName = getInternalInstanceName(visitor);
     if (ref.reactKey) {
       relativeName = ref.reactKey + ': ' + relativeName;
     }
-    ref.reactTree = registry.insert(parentRef.reactTree, relativeName);
+    ref.reactTree = registry.insert(parentRef.reactTree, strings.intern(relativeName));
   } else {
     throw 'non react instance parent of react instance';
   }
 }
 
-function markReactComponentTree(refs, registry) {
+function markReactComponentTree(refs, registry, strings) {
   // annotate all refs that are react internal instances with their parent and name
   // ref.reactParent = visitor that points to parent instance,
   //   null if we know it's an instance, but don't have a parent yet
@@ -191,7 +201,7 @@ function markReactComponentTree(refs, registry) {
   // build tree of react internal instances (since that's what has the structure)
   // fill in ref.reactTree = path registry node
   forEachRef(refs, (visitor) => {
-    buildReactComponentTree(visitor, registry);
+    buildReactComponentTree(visitor, registry, strings);
   });
   // hook in components by looking at their _reactInternalInstance fields
   forEachRef(refs, (visitor) => {
@@ -203,13 +213,54 @@ function markReactComponentTree(refs, registry) {
   });
 }
 
-function registerPathToRoot(refs, registry) {
-  markReactComponentTree(refs, registry);
+function functionUrlFileName(visitor) {
+  const executable = visitor.clone().moveToEdge('@Executable');
+  const ref = executable.getRef();
+  if (ref && ref.value && ref.value.url) {
+    const url = ref.value.url;
+    let file = url.substring(url.lastIndexOf('/') + 1);
+    if (file.endsWith('.js')) {
+      file = file.substring(0, file.length - 3);
+    }
+    return file;
+  }
+  return undefined;
+}
+
+function markModules(refs) {
+  const modules = firstRef(refs, (id, ref) => ref.type === 'CallbackGlobalObject');
+  modules.moveToEdge('require');
+  modules.moveToFirst((name, visitor) => visitor.getType() === 'JSActivation');
+  modules.moveToEdge('modules');
+  modules.forEachEdge((name, visitor) => {
+    const ref = visitor.getRef();
+    visitor.moveToEdge('exports');
+    if (visitor.getType() === 'Object') {
+      visitor.moveToFirst((memberName, member) => member.getType() === 'Function');
+      if (visitor.isDefined()) {
+        ref.module = functionUrlFileName(visitor);
+      }
+    } else if (visitor.getType() === 'Function') {
+      const displayName = visitor.clone().moveToEdge('displayName');
+      if (displayName.isDefined()) {
+        ref.module = displayName.getValue();
+      }
+      ref.module = functionUrlFileName(visitor);
+    }
+    if (ref && !ref.module) {
+      ref.module = '#unknown ' + name;
+    }
+  });
+}
+
+function registerPathToRoot(refs, registry, strings) {
+  markReactComponentTree(refs, registry, strings);
+  markModules(refs);
   let breadth = [];
   forEachRef(refs, (visitor) => {
     const ref = visitor.getRef();
     if (ref.type === 'CallbackGlobalObject') {
-      ref.rootPath = registry.insert(registry.root, ref.type);
+      ref.rootPath = registry.insert(registry.root, strings.intern(ref.type));
       breadth.push(visitor.clone());
     }
   });
@@ -225,9 +276,12 @@ function registerPathToRoot(refs, registry) {
           if (edgeName) {
             pathName = edgeName + ': ' + pathName;
           }
-          edgeRef.rootPath = registry.insert(ref.rootPath, pathName);
+          edgeRef.rootPath = registry.insert(ref.rootPath, strings.intern(pathName));
           nextBreadth.push(edgeVisitor.clone());
-          // copy react tree forward
+          // copy module and react tree forward
+          if (edgeRef.module === undefined) {
+            edgeRef.module = ref.module;
+          }
           if (edgeRef.reactTree === undefined) {
             edgeRef.reactTree = ref.reactTree;
           }
@@ -250,7 +304,8 @@ function captureRegistry() {
   const pathField = 4;
   const reactField = 5;
   const valueField = 6;
-  const numFields = 7;
+  const moduleField = 7;
+  const numFields = 8;
 
   return {
     strings: strings,
@@ -275,9 +330,10 @@ function captureRegistry() {
       let dataOffset = this.data.length;
       this.data = null;
 
-      registerPathToRoot(capture.refs, this.stacks);
+      registerPathToRoot(capture.refs, this.stacks, this.strings);
       const internedCaptureId = this.strings.intern(captureId);
-      const noneStack = this.stacks.insert(this.stacks.root, '#none');
+      const noneString = this.strings.intern('#none');
+      const noneStack = this.stacks.insert(this.stacks.root, noneString);
       forEachRef(capture.refs, (visitor) => {
         const ref = visitor.getRef();
         const id = visitor.id;
@@ -296,6 +352,11 @@ function captureRegistry() {
           newData[dataOffset + reactField] = ref.reactTree.id;
         }
         newData[dataOffset + valueField] = this.strings.intern(visitor.getValue());
+        if (ref.module) {
+          newData[dataOffset + moduleField] = this.strings.intern(ref.module);
+        } else {
+          newData[dataOffset + moduleField] = noneString;
+        }
         dataOffset += numFields;
       });
       for (const id in capture.markedBlocks) {
@@ -311,6 +372,7 @@ function captureRegistry() {
           ', size: ' + block.size +
           ', granularity: ' + block.cellSize
         );
+        newData[dataOffset + moduleField] = noneString;
         dataOffset += numFields;
       }
       this.data = newData;
@@ -320,9 +382,9 @@ function captureRegistry() {
       const agStacks = this.stacks.flatten();
       const agData = this.data;
       const agNumRows = agData.length / numFields;
-      const ag = new aggrow(agStrings, agStacks, agNumRows);
+      const ag = new aggrow(agNumRows);
 
-      const idExpander = ag.addFieldExpander('Id',
+      ag.addFieldExpander('Id',
         function getId(row) {
           let id = agData[row * numFields + idField];
           if (id < 0) {
@@ -340,28 +402,42 @@ function captureRegistry() {
           return agData[rowA * numFields + typeField] - agData[rowB * numFields + typeField];
         });
 
-      const sizeExpander = ag.addFieldExpander('Size',
+      ag.addFieldExpander('Size',
         function getSize(row) { return agData[row * numFields + sizeField].toString(); },
         function compareSize(rowA, rowB) {
           return agData[rowA * numFields + sizeField] - agData[rowB * numFields + sizeField];
         });
 
-      const traceExpander = ag.addFieldExpander('Trace',
+      ag.addFieldExpander('Trace',
         function getSize(row) { return agStrings.get(agData[row * numFields + traceField]); },
         function compareSize(rowA, rowB) {
           return agData[rowA * numFields + traceField] - agData[rowB * numFields + traceField];
         });
 
-      const pathExpander = ag.addCalleeStackExpander('Path',
-        function getStack(row) { return agStacks.get(agData[row * numFields + pathField]); });
+      const pathExpander = ag.addCalleeStackExpander(
+        'Path',
+        agStacks.maxDepth,
+        function getStack(row) { return agStacks.get(agData[row * numFields + pathField]); },
+        function getFrame(id) { return agStrings.get(id); },
+      );
 
-      const reactExpander = ag.addCalleeStackExpander('React Tree',
-        function getStack(row) { return agStacks.get(agData[row * numFields + reactField]); });
+      const reactExpander = ag.addCalleeStackExpander(
+        'React Tree',
+        agStacks.maxDepth,
+        function getStack(row) { return agStacks.get(agData[row * numFields + reactField]); },
+        function getFrame(id) { return agStrings.get(id); },
+      );
 
       const valueExpander = ag.addFieldExpander('Value',
         function getValue(row) { return agStrings.get(agData[row * numFields + valueField]); },
         function compareValue(rowA, rowB) {
           return agData[rowA * numFields + valueField] - agData[rowB * numFields + valueField];
+        });
+
+      const moduleExpander = ag.addFieldExpander('Module',
+        function getModule(row) { return agStrings.get(agData[row * numFields + moduleField]); },
+        function compareModule(rowA, rowB) {
+          return agData[rowA * numFields + moduleField] - agData[rowB * numFields + moduleField];
         });
 
       const sizeAggregator = ag.addAggregator('Size',
@@ -386,11 +462,9 @@ function captureRegistry() {
       ag.setActiveExpanders([
         pathExpander,
         reactExpander,
+        moduleExpander,
         typeExpander,
-        idExpander,
-        traceExpander,
         valueExpander,
-        sizeExpander
       ]);
       ag.setActiveAggregators([sizeAggregator, countAggregator]);
       return ag;
