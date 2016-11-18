@@ -83,6 +83,10 @@ public class ReactViewGroup extends ViewGroup implements
   // whenever the option is set. We also override {@link ViewGroup#getChildAt} and
   // {@link ViewGroup#getChildCount} so those methods may return views that are not attached.
   // This is risky but allows us to perform a correct cleanup in {@link NativeViewHierarchyManager}.
+  //只是将View从布局中移除,View的引用还是保持在mAllChildren中的,一般状态也可保持
+  //被移除的View会自然的触发 onDetachedFromWindow 对于图片如DraweeView 会释放图片资源
+  //对于其它View一般也会有释放资源释放定时器等操作,连view本身也释放掉确实没必要
+  // 有没有相对于将View从布局中移除触发 onDetachedFromWindow 更好的方式通知子View 处于父View的不可见区域?
   private boolean mRemoveClippedSubviews = false;
   private @Nullable View[] mAllChildren = null;
   private int mAllChildrenCount;

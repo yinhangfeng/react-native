@@ -134,6 +134,7 @@ class ListViewDataSource {
 
     // These two private variables are accessed by outsiders because ListView
     // uses them to iterate over the data in this class.
+
     this.rowIdentities = [];
     this.sectionIdentities = [];
   }
@@ -327,16 +328,32 @@ class ListViewDataSource {
   _rowHasChanged: differType;
   _sectionHeaderHasChanged: ?differType;
 
+/*
+_dataBlob: {
+  sectionID: {
+    rowID: rowDATA
+  }
+}
+*/
   _dataBlob: any;
+  //数组每一项时对应序号的section内 rows是否为脏的数组
   _dirtyRows: Array<Array<bool>>;
+  //数组每一项代表对应序号的section是否为脏的标记
   _dirtySections: Array<bool>;
   _cachedRowCount: number;
 
   // These two 'protected' variables are accessed by ListView to iterate over
   // the data in this class.
+  /*
+  rowIdentities: [[rowID...]]
+  */
   rowIdentities: Array<Array<string>>;
+  /*
+  [sectionID...]
+  */
   sectionIdentities: Array<string>;
 
+//比较前后数据 得到需要更新的数组 sectionIdentities rowIdentities
   _calculateDirtyArrays(
     prevDataBlob: any,
     prevSectionIDs: Array<string>,

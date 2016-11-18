@@ -179,6 +179,9 @@ public class RecyclerViewBackedScrollView extends RecyclerView {
 
   /*package*/ static class ReactListAdapter extends Adapter<ConcreteViewHolder> {
 
+    //mViews 存储了所有View 所以滚动过程中View不会重用和释放,重用的只是RecyclableWrapperViewGroup
+    //但不可见的View会被从布局中移除 会触发onDetachedFromWindow 实际上实现了和ReactViewGroup mRemoveClippedSubviews
+    //类似的效果
     private final List<View> mViews = new ArrayList<>();
     private final ScrollOffsetTracker mScrollOffsetTracker;
     private final RecyclerViewBackedScrollView mScrollView;

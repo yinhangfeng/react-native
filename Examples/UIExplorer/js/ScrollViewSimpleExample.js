@@ -28,10 +28,11 @@ var {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity
+  TouchableOpacity,
+  View,
 } = ReactNative;
 
-var NUM_ITEMS = 20;
+var NUM_ITEMS = 3;
 
 class ScrollViewSimpleExample extends React.Component {
   static title = '<ScrollView>';
@@ -52,16 +53,18 @@ class ScrollViewSimpleExample extends React.Component {
   render() {
     // One of the items is a horizontal scroll view
     var items = this.makeItems(NUM_ITEMS, styles.itemWrapper);
-    items[4] = (
-      <ScrollView key={'scrollView'} horizontal={true}>
-        {this.makeItems(NUM_ITEMS, [styles.itemWrapper, styles.horizontalItemWrapper])}
-      </ScrollView>
-    );
+    // items[4] = (
+    //   <ScrollView key={'scrollView'} horizontal={true}>
+    //     {this.makeItems(NUM_ITEMS, [styles.itemWrapper, styles.horizontalItemWrapper])}
+    //   </ScrollView>
+    // );
 
     var verticalScrollView = (
-      <ScrollView style={styles.verticalScrollView}>
-        {items}
-      </ScrollView>
+      <View style={{backgroundColor: '#8BD1AF', height: 400, width: 350, flexDirection: 'row', flex: undefined}}>
+        <ScrollView style={styles.verticalScrollView}>
+          {items}
+        </ScrollView>
+      </View>
     );
 
     return verticalScrollView;

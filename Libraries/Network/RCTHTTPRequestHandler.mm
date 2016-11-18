@@ -67,6 +67,7 @@ RCT_EXPORT_MODULE()
                                              delegate:self
                                         delegateQueue:callbackQueue];
 
+    //为什么不直接让RCTNetworkTask 继承自NSURLSessionDataTask 在回调时也不需要这个Map
     std::lock_guard<std::mutex> lock(_mutex);
     _delegates = [[NSMapTable alloc] initWithKeyOptions:NSPointerFunctionsStrongMemory
                                            valueOptions:NSPointerFunctionsStrongMemory

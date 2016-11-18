@@ -123,6 +123,8 @@ type DefaultProps = {
  *   };
  * ```
  */
+
+ //对NavigationAnimatedView 的包装
 class NavigationCardStack extends React.Component<DefaultProps, Props, void> {
   _render : NavigationSceneRenderer;
   _renderScene : NavigationSceneRenderer;

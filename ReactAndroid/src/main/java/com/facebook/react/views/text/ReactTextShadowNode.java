@@ -229,7 +229,7 @@ public class ReactTextShadowNode extends LayoutShadowNode {
             CSSMeasureMode heightMode) {
           // TODO(5578671): Handle text direction (see View#getTextDirectionHeuristic)
           TextPaint textPaint = sTextPaintInstance;
-          Layout layout;
+          Layout layout; //可以缓存layout?
           Spanned text = Assertions.assertNotNull(
               mPreparedSpannableText,
               "Spannable element has not been prepared in onBeforeLayout");

@@ -50,6 +50,7 @@ class NavButton extends React.Component {
 
 class NavMenu extends React.Component {
   render() {
+    console.log('NavMenu render', this.props.route);
     return (
       <ScrollView style={styles.scene}>
         <Text style={styles.messageText}>{this.props.message}</Text>
@@ -127,6 +128,7 @@ class TabBarExample extends React.Component {
       default:
         return (
           <NavMenu
+            route={route}
             message={route.message}
             navigator={nav}
             onExampleExit={this.props.onExampleExit}
