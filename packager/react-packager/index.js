@@ -10,11 +10,11 @@
 
 require('../babelRegisterOnly')([/react-packager\/src/]);
 
-var debug = require('debug');
-var Activity = require('./src/Activity');
+const debug = require('debug');
+const Logger = require('./src/Logger');
 
 exports.createServer = createServer;
-exports.Activity = Activity;
+exports.Logger = Logger;
 exports.getOrderedDependencyPaths = function(options, bundleOptions) {
   var server = createNonPersistentServer(options);
   return server.getOrderedDependencyPaths(bundleOptions)
@@ -45,26 +45,14 @@ function createServer(options) {
     enableDebug();
   }
 
+  options = Object.assign({}, options);
+  delete options.verbose;
   var Server = require('./src/Server');
-  return new Server(omit(options, ['verbose']));
+  return new Server(options);
 }
 
 function createNonPersistentServer(options) {
-  Activity.disable();
-  // Don't start the filewatcher or the cache.
-  if (options.nonPersistent == null) {
-    options.nonPersistent = true;
-  }
-
+  Logger.disablePrinting();
+  options.watch = !options.nonPersistent;
   return createServer(options);
-}
-
-function omit(obj, blacklistedKeys) {
-  return Object.keys(obj).reduce((clone, key) => {
-    if (blacklistedKeys.indexOf(key) === -1) {
-      clone[key] = obj[key];
-    }
-
-    return clone;
-  }, {});
 }

@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
+'use strict';
 
 const log = require('../util/log').out('bundle');
 const Promise = require('promise');
@@ -54,8 +55,8 @@ function buildBundle(args, config, output = outputBundle, packagerInstance) {
       getTransformOptionsModulePath: config.getTransformOptionsModulePath,
       transformModulePath: transformModulePath,
       extraNodeModules: config.extraNodeModules,
-      nonPersistent: true,
       resetCache: args.resetCache,
+      watch: false,
     };
 
     packagerInstance = new Server(options);

@@ -19,6 +19,10 @@
 #include <jschelpers/JSCHelpers.h>
 #include <jschelpers/Value.h>
 
+#ifdef WITH_INSPECTOR
+#include <inspector/Inspector.h>
+#endif
+
 #include "Platform.h"
 #include "SystraceSection.h"
 #include "JSCNativeModules.h"
@@ -197,9 +201,13 @@ JSCExecutor::~JSCExecutor() {
 
 void JSCExecutor::destroy() {
   *m_isDestroyed = true;
-  m_messageQueueThread->runOnQueueSync([this] () {
+  if (m_messageQueueThread.get()) {
+    m_messageQueueThread->runOnQueueSync([this] () {
+      terminateOnJSVMThread();
+    });
+  } else {
     terminateOnJSVMThread();
-  });
+  }
 }
 
 void JSCExecutor::setContextName(const std::string& name) {
@@ -228,6 +236,10 @@ void JSCExecutor::initOnJSVMThread() throw(JSException) {
 
   // Add a pointer to ourselves so we can retrieve it later in our hooks
   JSObjectSetPrivate(JSContextGetGlobalObject(m_context), this);
+
+  #ifdef WITH_INSPECTOR
+  Inspector::instance().registerGlobalContext("main", m_context);
+  #endif
 
   installNativeHook<&JSCExecutor::nativeFlushQueueImmediate>("nativeFlushQueueImmediate");
   installNativeHook<&JSCExecutor::nativeCallSyncHook>("nativeCallSyncHook");
@@ -283,6 +295,10 @@ void JSCExecutor::terminateOnJSVMThread() {
 
   m_nativeModules.reset();
 
+  #ifdef WITH_INSPECTOR
+  Inspector::instance().unregisterGlobalContext(m_context);
+  #endif
+
   JSGlobalContextRelease(m_context);
   m_context = nullptr;
 }
@@ -312,9 +328,14 @@ void JSCExecutor::loadApplicationScript(
     folly::checkUnixError(fd, "Couldn't open compiled bundle");
     SCOPE_EXIT { close(fd); };
     sourceCode = JSCreateCompiledSourceCode(fd, jsSourceURL);
+
+    folly::throwOnFail<std::runtime_error>(
+      sourceCode != nullptr,
+      "Could not create compiled source code"
+    );
   } else {
-    auto jsScriptBigString = JSBigMmapString::fromOptimizedBundle(bundlePath);
-    if (jsScriptBigString->encoding() != JSBigMmapString::Encoding::Ascii) {
+    auto jsScriptBigString = JSBigOptimizedBundleString::fromOptimizedBundle(bundlePath);
+    if (!jsScriptBigString->isAscii()) {
       LOG(WARNING) << "Bundle is not ASCII encoded - falling back to the slow path";
       return loadApplicationScript(std::move(jsScriptBigString), sourceURL);
     }
