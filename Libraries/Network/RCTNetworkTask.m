@@ -7,10 +7,9 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 
-#import "RCTNetworkTask.h"
-
-#import "RCTLog.h"
-#import "RCTUtils.h"
+#import <React/RCTLog.h>
+#import <React/RCTNetworkTask.h>
+#import <React/RCTUtils.h>
 
 //为什么不直接让RCTNetworkTask 继承自NSURLSessionDataTask？
 @implementation RCTNetworkTask
