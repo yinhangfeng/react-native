@@ -35,9 +35,11 @@ const {
   extname,
 } = require('path');
 
-import AssetServer from '../AssetServer';
-import Module from '../node-haste/Module';
-import ResolutionResponse from '../node-haste/DependencyGraph/ResolutionResponse';
+import type AssetServer from '../AssetServer';
+import type Module from '../node-haste/Module';
+import type ResolutionResponse from '../node-haste/DependencyGraph/ResolutionResponse';
+import type {Options as TransformOptions} from '../JSTransformer/worker/worker';
+import type {Reporter} from '../lib/reporting';
 
 export type GetTransformOptions<T> = (
   string,
@@ -53,7 +55,6 @@ const {
   createActionStartEntry,
   createActionEndEntry,
   log,
-  print,
 } = require('../Logger');
 
 const validateOpts = declareOpts({
@@ -112,6 +113,9 @@ const validateOpts = declareOpts({
     type: 'boolean',
     default: false,
   },
+  reporter: {
+    type: 'object',
+  },
 });
 
 const assetPropertyBlacklist = new Set([
@@ -121,21 +125,22 @@ const assetPropertyBlacklist = new Set([
 ]);
 
 type Options = {
-  projectRoots: Array<string>,
+  allowBundleUpdates: boolean,
+  assetExts: Array<string>,
+  assetServer: AssetServer,
   blacklistRE: RegExp,
-  moduleFormat: string,
-  polyfillModuleNames: Array<string>,
   cacheVersion: string,
+  extraNodeModules: {},
+  getTransformOptions?: GetTransformOptions<*>,
+  moduleFormat: string,
+  platforms: Array<string>,
+  polyfillModuleNames: Array<string>,
+  projectRoots: Array<string>,
+  reporter: Reporter,
   resetCache: boolean,
   transformModulePath: string,
-  getTransformOptions?: GetTransformOptions<*>,
-  extraNodeModules: {},
-  assetExts: Array<string>,
-  platforms: Array<string>,
-  watch: boolean,
-  assetServer: AssetServer,
   transformTimeoutInterval: ?number,
-  allowBundleUpdates: boolean,
+  watch: boolean,
 };
 
 class Bundler {
@@ -203,20 +208,21 @@ class Bundler {
       blacklistRE: opts.blacklistRE,
       cache: this._cache,
       extraNodeModules: opts.extraNodeModules,
-      watch: opts.watch,
       minifyCode: this._transformer.minify,
       moduleFormat: opts.moduleFormat,
       platforms: opts.platforms,
       polyfillModuleNames: opts.polyfillModuleNames,
       projectRoots: opts.projectRoots,
+      reporter: options.reporter,
       resetCache: opts.resetCache,
+      transformCacheKey,
       transformCode:
         (module, code, transformCodeOptions) => this._transformer.transformFile(
           module.path,
           code,
           transformCodeOptions,
         ),
-      transformCacheKey,
+      watch: opts.watch,
     });
 
     this._projectRoots = opts.projectRoots;
@@ -353,8 +359,6 @@ class Bundler {
           ? runBeforeMainModule
               .map(name => modulesByName[name])
               .filter(Boolean)
-              /* $FlowFixMe: looks like ResolutionResponse is monkey-patched
-               * with `getModuleId`. */
               .map(response.getModuleId)
           : undefined;
 
@@ -402,11 +406,11 @@ class Bundler {
     onProgress = noop,
   }: *) {
     const transformingFilesLogEntry =
-      print(log(createActionStartEntry({
+      log(createActionStartEntry({
         action_name: 'Transforming files',
         entry_point: entryFile,
         environment: dev ? 'dev' : 'prod',
-      })));
+      }));
 
     const modulesByName = Object.create(null);
 
@@ -426,7 +430,7 @@ class Bundler {
     return Promise.resolve(resolutionResponse).then(response => {
       bundle.setRamGroups(response.transformOptions.transform.ramGroups);
 
-      print(log(createActionEndEntry(transformingFilesLogEntry)));
+      log(createActionEndEntry(transformingFilesLogEntry));
       onResolutionResponse(response);
 
       // get entry file complete path (`entryFile` is relative to roots)
@@ -450,7 +454,8 @@ class Bundler {
           entryFilePath,
           assetPlugins,
           transformOptions: response.transformOptions,
-          getModuleId: response.getModuleId,
+          /* $FlowFixMe: `getModuleId` is monkey-patched */
+          getModuleId: (response.getModuleId: () => number),
           dependencyPairs: response.getResolvedDependencyPairs(module),
         }).then(transformed => {
           modulesByName[transformed.name] = module;
@@ -485,7 +490,7 @@ class Bundler {
     generateSourceMaps = false,
   }: {
     entryFile: string,
-    platform: ?string,
+    platform: string,
     dev?: boolean,
     minify?: boolean,
     hot?: boolean,
@@ -528,14 +533,14 @@ class Bundler {
     onProgress,
   }: {
     entryFile: string,
-    platform: ?string,
+    platform: string,
     dev?: boolean,
     minify?: boolean,
     hot?: boolean,
     recursive?: boolean,
     generateSourceMaps?: boolean,
     isolateModuleIDs?: boolean,
-    onProgress?: () => mixed,
+    onProgress?: ?(finishedModules: number, totalModules: number) => mixed,
   }) {
     return this.getTransformOptions(
       entryFile,
@@ -567,7 +572,7 @@ class Bundler {
   getOrderedDependencyPaths({ entryFile, dev, platform }: {
     entryFile: string,
     dev: boolean,
-    platform: ?string,
+    platform: string,
   }) {
     return this.getDependencies({entryFile, dev, platform}).then(
       ({ dependencies }) => {
@@ -608,7 +613,15 @@ class Bundler {
     getModuleId,
     dependencyPairs,
     assetPlugins,
-  }) {
+  }: {
+    module: Module,
+    bundle: Bundle,
+    entryFilePath: string,
+    transformOptions: TransformOptions,
+    getModuleId: () => number,
+    dependencyPairs: Array<[mixed, {path: string}]>,
+    assetPlugins: Array<string>,
+  }): Promise<ModuleTransport> {
     let moduleTransport;
     const moduleId = getModuleId(module);
 
@@ -670,7 +683,9 @@ class Bundler {
         __packager_asset: true,
         fileSystemLocation: pathDirname(module.path),
         httpServerLocation: assetUrlPath,
+        /* $FlowFixMe: `resolution` is assets-only */
         width: dimensions ? dimensions.width / module.resolution : undefined,
+        /* $FlowFixMe: `resolution` is assets-only */
         height: dimensions ? dimensions.height / module.resolution : undefined,
         scales: assetData.scales,
         files: assetData.files,
@@ -718,9 +733,9 @@ class Bundler {
   }
 
   _generateAssetModule(
-    bundle,
-    module,
-    moduleId,
+    bundle: Bundle,
+    module: Module,
+    moduleId: number,
     assetPlugins: Array<string> = [],
     platform: ?string = null,
   ) {
@@ -745,7 +760,7 @@ class Bundler {
     mainModuleName: string,
     options: {
       dev?: boolean,
-      platform: ?string,
+      platform: string,
       hot?: boolean,
       generateSourceMaps?: boolean,
     },
