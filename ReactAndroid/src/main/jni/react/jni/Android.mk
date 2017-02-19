@@ -21,4 +21,8 @@ LOCAL_STATIC_LIBRARIES :=
 
 include $(BUILD_SHARED_LIBRARY)
 
+#$(call import-add-path,/Users/yinhf/work/source/react-native/ReactAndroid/src/main/jni)
+#$(call import-add-path,/Users/yinhf/work/source/react-native/ReactAndroid/src/main/jni/first-party)
+#$(call import-add-path,/Users/yinhf/work/source/react-native/ReactAndroid/src/main/jni/third-party)
+#$(call import-add-path,/Users/yinhf/work/source/react-native/ReactCommon)
 $(call import-module,xreact/jni)
