@@ -9,7 +9,7 @@
 
 #import <UIKit/UIKit.h>
 
-#import "RCTComponent.h"
+#import <React/RCTComponent.h>
 
 @class RCTShadowView;
 
@@ -22,6 +22,13 @@
 - (UIView *)reactSuperview NS_REQUIRES_SUPER;
 - (void)insertReactSubview:(UIView *)subview atIndex:(NSInteger)atIndex NS_REQUIRES_SUPER;
 - (void)removeReactSubview:(UIView *)subview NS_REQUIRES_SUPER;
+
+/**
+ * Layout direction of the view.
+ * Internally backed to `semanticContentAttribute` property.
+ * Defaults to `LeftToRight` in case of ambiguity.
+ */
+@property (nonatomic, assign) UIUserInterfaceLayoutDirection reactLayoutDirection;
 
 /**
  * z-index, used to override sibling order in didUpdateReactSubviews.
@@ -80,20 +87,5 @@
 @property (nonatomic, strong, setter=_DEBUG_setReactShadowView:) RCTShadowView *_DEBUG_reactShadowView;
 
 #endif
-
-/**
- * Having views in view hierarchy that are not visible wastes resources.
- * That's why we have implemented view clipping. The key idea is simple:
- *   When a view has clipping turned on, its subview is removed as long as it is outside of the view's bounds.
- *
- * Few clarifications:
- * 1/ All subviews are affected, not just the direct ones.
- * 2/ If there are multiple ancestors with a view clipping turned on then intersection of their bounds will be used for clipping.
- * 3/ All UIViews are affected, not only RCTViews. Alhough this behavior is never triggered outside of React Native.
- * 4/ Position in a UIWindow is not used for cliping.
- */
-@property (nonatomic, assign, setter=rct_setRemovesClippedSubviews:) BOOL rct_removesClippedSubviews;
-/** Recomputes clipping for a view and its subviews. You should call this if you move views manually in your view manager. */
-- (void)rct_reclip;
 
 @end

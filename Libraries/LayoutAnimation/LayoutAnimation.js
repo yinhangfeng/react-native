@@ -70,7 +70,9 @@ type Config = {
 }
 
 function configureNext(config: Config, onAnimationDidEnd?: Function) {
-  configChecker({config}, 'config', 'LayoutAnimation.configureNext');
+  if (__DEV__) {
+    configChecker({config}, 'config', 'LayoutAnimation.configureNext');
+  }
   UIManager.configureNextLayoutAnimation(
     config, onAnimationDidEnd || function() {}, function() { /* unused */ }
   );
@@ -121,8 +123,11 @@ var Presets = {
  * Automatically animates views to their new positions when the
  * next layout happens.
  *
- * A common way to use this API is to call `LayoutAnimation.configureNext`
- * before calling `setState`.
+ * A common way to use this API is to call it before calling `setState`.
+ *
+ * Note that in order to get this to work on **Android** you need to set the following flags via `UIManager`:
+ *
+ *     UIManager.setLayoutAnimationEnabledExperimental && UIManager.setLayoutAnimationEnabledExperimental(true);
  */
 var LayoutAnimation = {
   /**

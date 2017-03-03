@@ -19,6 +19,8 @@ const React = require('React');
 const StyleSheet = require('StyleSheet');
 const View = require('View');
 
+const invariant = require('fbjs/lib/invariant');
+
 import type {
   NavigationAnimatedValue,
   NavigationLayout,
@@ -127,13 +129,15 @@ class NavigationTransitioner extends React.Component<any, Props, State> {
       scenes: nextScenes,
     };
 
-    this._prevTransitionProps = this._transitionProps;
-    this._transitionProps = buildTransitionProps(nextProps, nextState);
-
     const {
       position,
       progress,
     } = nextState;
+
+    progress.setValue(0);
+
+    this._prevTransitionProps = this._transitionProps;
+    this._transitionProps = buildTransitionProps(nextProps, nextState);
 
     // get the transition spec.
     const transitionUserSpec = nextProps.configureTransition ?
@@ -150,8 +154,6 @@ class NavigationTransitioner extends React.Component<any, Props, State> {
 
     const {timing} = transitionSpec;
     delete transitionSpec.timing;
-
-    progress.setValue(0);
 
     const animations = [
       timing(
@@ -259,14 +261,17 @@ function buildTransitionProps(
     scenes,
   } = state;
 
+  const scene = scenes.find(isSceneActive);
+
+  invariant(scene, 'No active scene when building navigation transition props.');
+
   return {
     layout,
     navigationState,
     position,
     progress,
     scenes,
-    // $FlowFixMe(>=0.32.0) - find can return undefined
-    scene: scenes.find(isSceneActive),
+    scene
   };
 }
 

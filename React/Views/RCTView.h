@@ -7,13 +7,12 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 
-#import "RCTView.h"
-
 #import <UIKit/UIKit.h>
 
-#import "RCTBorderStyle.h"
-#import "RCTComponent.h"
-#import "RCTPointerEvents.h"
+#import <React/RCTBorderStyle.h>
+#import <React/RCTComponent.h>
+#import <React/RCTPointerEvents.h>
+#import <React/RCTView.h>
 
 @protocol RCTAutoInsetsProtocol;
 
@@ -42,12 +41,35 @@
 + (UIEdgeInsets)contentInsetsForView:(UIView *)curView;
 
 /**
+ * Layout direction of the view.
+ * This is inherited from UIView+React, but we override it here
+ * to improve perfomance and make subclassing/overriding possible/easier.
+ */
+@property (nonatomic, assign) UIUserInterfaceLayoutDirection reactLayoutDirection;
+
+/**
  * z-index, used to override sibling order in didUpdateReactSubviews. This is
  * inherited from UIView+React, but we override it here to reduce the boxing
  * and associated object overheads.
  */
 @property (nonatomic, assign) NSInteger reactZIndex;
 
+/**
+ * This is an optimization used to improve performance
+ * for large scrolling views with many subviews, such as a
+ * list or table. If set to YES, any clipped subviews will
+ * be removed from the view hierarchy whenever -updateClippedSubviews
+ * is called. This would typically be triggered by a scroll event
+ */
+@property (nonatomic, assign) BOOL removeClippedSubviews;
+
+/**
+ * Hide subviews if they are outside the view bounds.
+ * This is an optimisation used predominantly with RKScrollViews
+ * but it is applied recursively to all subviews that have
+ * removeClippedSubviews set to YES
+ */
+- (void)updateClippedSubviews;
 
 /**
  * Border radii.

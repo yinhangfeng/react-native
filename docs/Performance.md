@@ -4,7 +4,7 @@ title: Performance
 layout: docs
 category: Guides
 permalink: docs/performance.html
-next: upgrading
+next: understanding-cli
 previous: navigation
 ---
 
@@ -85,19 +85,6 @@ but their receipt is not necessary for the scroll to occur).
 #### Console.log statements
 
 When running a bundled app, these statements can cause a big bottleneck in the JavaScript thread. This includes calls from debugging libraries such as [redux-logger](https://github.com/evgenyrodionov/redux-logger), so make sure to remove them before bundling.
-
-> There is a [babel plugin](https://babeljs.io/docs/plugins/transform-remove-console/) that can remove all `console.*` calls. You need to install it first using `npm install babel-plugin-transform-remove-console --save`, and then edit (or create) `.babelrc` under your project directory like the following:
-```json
-{
-  "env": {
-    "production": {
-      "plugins": ["transform-remove-console"]
-    }
-  }
-}
-```
-Then it will automatically remove all `console.*` calls in a release (production) version of your project. However, the `console.*` calls will still be executed in the debug version of your project.
-
 
 #### Development mode (dev=true)
 
@@ -324,3 +311,7 @@ the JavaScript thread and main thread side-by-side.
 
 For iOS, Instruments are an invaluable tool, and on Android you should
 learn to use systrace.
+
+You can also use [`react-addons-perf`](https://facebook.github.io/react/docs/perf.html) to get insights into where React is spending time when rendering your components.
+
+Another way to profile JavaScript is to use the Chrome profiler while debugging. This won't give you accurate results as the code is running in Chrome but will give you a general idea of where bottlenecks might be.
