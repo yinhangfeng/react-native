@@ -23,6 +23,7 @@ const ScrollViewStickyHeader = require('ScrollViewStickyHeader');
 const StyleSheet = require('StyleSheet');
 const StyleSheetPropType = require('StyleSheetPropType');
 const View = require('View');
+const ViewPropTypes = require('ViewPropTypes');
 const ViewStylePropTypes = require('ViewStylePropTypes');
 
 const dismissKeyboard = require('dismissKeyboard');
@@ -48,23 +49,29 @@ const requireNativeComponent = require('requireNativeComponent');
  * view from becoming the responder.
  *
  *
- * `<ScrollView>` vs `<ListView>` - which one to use?
- * ScrollView simply renders all its react child components at once. That
- * makes it very easy to understand and use.
- * On the other hand, this has a performance downside. Imagine you have a very
- * long list of items you want to display, worth of couple of your ScrollView's
- * heights. Creating JS components and native views upfront for all its items,
- * which may not even be shown, will contribute to slow rendering of your
- * screen and increased memory usage.
+ * `<ScrollView>` vs [`<FlatList>`](/react-native/docs/flatlist.html) - which one to use?
  *
- * This is where ListView comes into play. ListView renders items lazily,
- * just when they are about to appear. This laziness comes at cost of a more
- * complicated API, which is worth it unless you are rendering a small fixed
- * set of items.
+ * `ScrollView` simply renders all its react child components at once. That
+ * makes it very easy to understand and use.
+ *
+ * On the other hand, this has a performance downside. Imagine you have a very
+ * long list of items you want to display, maybe several screens worth of
+ * content. Creating JS components and native views for everythign all at once,
+ * much of which may not even be shown, will contribute to slow rendering and
+ * increased memory usage.
+ *
+ * This is where `FlatList` comes into play. `FlatList` renders items lazily,
+ * just when they are about to appear, and removes items that scroll way off
+ * screen to save memory and processing time.
+ *
+ * `FlatList` is also handy if you want to render separators between your items,
+ * multiple columns, infinite scroll loading, or any number of other features it
+ * supports out of the box.
  */
+// $FlowFixMe(>=0.41.0)
 const ScrollView = React.createClass({
   propTypes: {
-    ...View.propTypes,
+    ...ViewPropTypes,
     /**
      * Controls whether iOS should automatically adjust the content inset
      * for scroll views that are placed behind a navigation bar or
@@ -289,7 +296,6 @@ const ScrollView = React.createClass({
      * `stickyHeaderIndices={[0]}` will cause the first child to be fixed to the
      * top of the scroll view. This property is not supported in conjunction
      * with `horizontal={true}`.
-     * @platform ios
      */
     stickyHeaderIndices: PropTypes.arrayOf(PropTypes.number),
     style: StyleSheetPropType(ViewStylePropTypes),
@@ -378,7 +384,7 @@ const ScrollView = React.createClass({
   _scrollAnimatedValue: (new Animated.Value(0): Animated.Value),
   _scrollAnimatedValueAttachment: (null: ?{detach: () => void}),
   _stickyHeaderRefs: (new Map(): Map<number, ScrollViewStickyHeader>),
-
+  _headerLayoutYs: (new Map(): Map<string, number>),
   getInitialState: function() {
     return this.scrollResponderMixinGetInitialState();
   },
@@ -386,6 +392,7 @@ const ScrollView = React.createClass({
   componentWillMount: function() {
     this._scrollAnimatedValue = new Animated.Value(0);
     this._stickyHeaderRefs = new Map();
+    this._headerLayoutYs = new Map();
   },
 
   componentDidMount: function() {
@@ -432,7 +439,7 @@ const ScrollView = React.createClass({
    * `scrollTo({x: 0; y: 0; animated: true})`
    *
    * Note: The weird function signature is due to the fact that, for historical reasons,
-   * the function also accepts separate arguments as as alternative to the options object.
+   * the function also accepts separate arguments as an alternative to the options object.
    * This is deprecated due to ambiguity (y before x), and SHOULD NOT BE USED.
    */
   scrollTo: function(
@@ -477,6 +484,11 @@ const ScrollView = React.createClass({
     this.scrollTo({x, y, animated: false});
   },
 
+  _getKeyForIndex: function(index, childArray) {
+    const child = childArray[index];
+    return child && child.key;
+  },
+
   _updateAnimatedNodeAttachment: function() {
     if (this.props.stickyHeaderIndices && this.props.stickyHeaderIndices.length > 0) {
       if (!this._scrollAnimatedValueAttachment) {
@@ -493,23 +505,34 @@ const ScrollView = React.createClass({
     }
   },
 
-  _setStickyHeaderRef: function(index, ref) {
-    this._stickyHeaderRefs.set(index, ref);
+  _setStickyHeaderRef: function(key, ref) {
+    if (ref) {
+      this._stickyHeaderRefs.set(key, ref);
+    } else {
+      this._stickyHeaderRefs.delete(key);
+    }
   },
 
-  _onStickyHeaderLayout: function(index, event) {
+  _onStickyHeaderLayout: function(index, event, key) {
     if (!this.props.stickyHeaderIndices) {
       return;
     }
+    const childArray = React.Children.toArray(this.props.children);
+    if (key !== this._getKeyForIndex(index, childArray)) {
+      // ignore stale layout update
+      return;
+    }
 
-    const previousHeaderIndex = this.props.stickyHeaderIndices[
-      this.props.stickyHeaderIndices.indexOf(index) - 1
-    ];
+    const layoutY = event.nativeEvent.layout.y;
+    this._headerLayoutYs.set(key, layoutY);
+
+    const indexOfIndex = this.props.stickyHeaderIndices.indexOf(index);
+    const previousHeaderIndex = this.props.stickyHeaderIndices[indexOfIndex - 1];
     if (previousHeaderIndex != null) {
-      const previousHeader = this._stickyHeaderRefs.get(previousHeaderIndex);
-      previousHeader && previousHeader.setNextHeaderY(
-        event.nativeEvent.layout.y - event.nativeEvent.layout.height,
+      const previousHeader = this._stickyHeaderRefs.get(
+        this._getKeyForIndex(previousHeaderIndex, childArray)
       );
+      previousHeader && previousHeader.setNextHeaderY(layoutY);
     }
   },
 
@@ -596,27 +619,33 @@ const ScrollView = React.createClass({
       };
     }
 
-      const {stickyHeaderIndices} = this.props;
-      const hasStickyHeaders = stickyHeaderIndices && stickyHeaderIndices.length > 0;
-      const children = stickyHeaderIndices && hasStickyHeaders ?
-        React.Children.toArray(this.props.children).map((child, index) => {
-          const stickyHeaderIndex = stickyHeaderIndices.indexOf(index);
-          if (child && stickyHeaderIndex >= 0) {
-            return (
-              <ScrollViewStickyHeader
-                key={index}
-                ref={(ref) => this._setStickyHeaderRef(index, ref)}
-                onLayout={(event) => this._onStickyHeaderLayout(index, event)}
-                scrollAnimatedValue={this._scrollAnimatedValue}>
-                {child}
-              </ScrollViewStickyHeader>
-            );
-          } else {
-            return child;
-          }
-        }) :
-        this.props.children;
-      const contentContainer =
+    const {stickyHeaderIndices} = this.props;
+    const hasStickyHeaders = stickyHeaderIndices && stickyHeaderIndices.length > 0;
+    const childArray = hasStickyHeaders && React.Children.toArray(this.props.children);
+    const children = hasStickyHeaders ?
+      childArray.map((child, index) => {
+        const indexOfIndex = child ? stickyHeaderIndices.indexOf(index) : -1;
+        if (indexOfIndex > -1) {
+          const key = child.key;
+          const nextIndex = stickyHeaderIndices[indexOfIndex + 1];
+          return (
+            <ScrollViewStickyHeader
+              key={key}
+              ref={(ref) => this._setStickyHeaderRef(key, ref)}
+              nextHeaderLayoutY={
+                this._headerLayoutYs.get(this._getKeyForIndex(nextIndex, childArray))
+              }
+              onLayout={(event) => this._onStickyHeaderLayout(index, event, key)}
+              scrollAnimatedValue={this._scrollAnimatedValue}>
+              {child}
+            </ScrollViewStickyHeader>
+          );
+        } else {
+          return child;
+        }
+      }) :
+      this.props.children;
+    const contentContainer =
       <ScrollContentContainerViewClass
         {...contentSizeChangeProps}
         ref={this._setInnerViewRef}
@@ -666,7 +695,6 @@ const ScrollView = React.createClass({
       scrollEventThrottle: hasStickyHeaders ? 1 : this.props.scrollEventThrottle,
       sendMomentumEvents: (this.props.onMomentumScrollBegin || this.props.onMomentumScrollEnd) ?
         true : false,
-      stickyHeaderIndices: null,
     };
 
     const { decelerationRate } = this.props;
@@ -675,12 +703,14 @@ const ScrollView = React.createClass({
     }
 
     const refreshControl = this.props.refreshControl;
+
     if (refreshControl) {
       if (Platform.OS === 'ios') {
         // On iOS the RefreshControl is a child of the ScrollView.
+        // tvOS lacks native support for RefreshControl, so don't include it in that case
         return (
           <ScrollViewClass {...props} ref={this._setScrollViewRef}>
-            {refreshControl}
+            {Platform.isTVOS ? null : refreshControl}
             {contentContainer}
           </ScrollViewClass>
         );
@@ -739,12 +769,12 @@ if (Platform.OS === 'android') {
   };
   AndroidScrollView = requireNativeComponent(
     'RCTScrollView',
-    (ScrollView: ReactClass<*>),
+    (ScrollView: ReactClass<any>),
     nativeOnlyProps
   );
   AndroidHorizontalScrollView = requireNativeComponent(
     'AndroidHorizontalScrollView',
-    (ScrollView: ReactClass<*>),
+    (ScrollView: ReactClass<any>),
     nativeOnlyProps
   );
 } else if (Platform.OS === 'ios') {
@@ -758,7 +788,7 @@ if (Platform.OS === 'android') {
   };
   RCTScrollView = requireNativeComponent(
     'RCTScrollView',
-    (ScrollView: ReactClass<*>),
+    (ScrollView: ReactClass<any>),
     nativeOnlyProps,
   );
   RCTScrollContentView = requireNativeComponent('RCTScrollContentView', View);
