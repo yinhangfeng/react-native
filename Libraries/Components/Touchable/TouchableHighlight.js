@@ -15,6 +15,7 @@
 
 var ColorPropType = require('ColorPropType');
 var NativeMethodsMixin = require('NativeMethodsMixin');
+const PropTypes = require('prop-types');
 var React = require('React');
 var ReactNativeViewAttributes = require('ReactNativeViewAttributes');
 var StyleSheet = require('StyleSheet');
@@ -74,7 +75,7 @@ var TouchableHighlight = React.createClass({
      * Determines what the opacity of the wrapped view should be when touch is
      * active.
      */
-    activeOpacity: React.PropTypes.number,
+    activeOpacity: PropTypes.number,
     /**
      * The color of the underlay that will show through when the touch is
      * active.
@@ -84,17 +85,17 @@ var TouchableHighlight = React.createClass({
     /**
      * Called immediately after the underlay is shown
      */
-    onShowUnderlay: React.PropTypes.func,
+    onShowUnderlay: PropTypes.func,
     /**
      * Called immediately after the underlay is hidden
      */
-    onHideUnderlay: React.PropTypes.func,
+    onHideUnderlay: PropTypes.func,
     /**
      * *(Apple TV only)* TV preferred focus (see documentation for the View component).
      *
      * @platform ios
      */
-    hasTVPreferredFocus: React.PropTypes.bool,
+    hasTVPreferredFocus: PropTypes.bool,
     /**
      * *(Apple TV only)* Object with properties to control Apple TV parallax effects.
      *
@@ -106,7 +107,7 @@ var TouchableHighlight = React.createClass({
      *
      * @platform ios
      */
-    tvParallaxProperties: React.PropTypes.object,
+    tvParallaxProperties: PropTypes.object,
 
   },
 
@@ -136,14 +137,20 @@ var TouchableHighlight = React.createClass({
   },
 
   getInitialState: function() {
+    this._isMounted = false;
     return merge(
       this.touchableGetInitialState(), this._computeSyntheticState(this.props)
     );
   },
 
   componentDidMount: function() {
+    this._isMounted = true;
     ensurePositiveDelayProps(this.props);
     ensureComponentIsNative(this.refs[CHILD_REF]);
+  },
+
+  componentWillUnmount: function() {
+    this._isMounted = false;
   },
 
   componentDidUpdate: function() {
@@ -215,7 +222,7 @@ var TouchableHighlight = React.createClass({
   },
 
   _showUnderlay: function() {
-    if (!this.isMounted() || !this._hasPressHandler()) {
+    if (!this._isMounted || !this._hasPressHandler()) {
       return;
     }
 

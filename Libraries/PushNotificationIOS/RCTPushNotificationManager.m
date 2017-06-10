@@ -50,16 +50,19 @@ RCT_ENUM_CONVERTER(NSCalendarUnit,
 + (UILocalNotification *)UILocalNotification:(id)json
 {
   NSDictionary<NSString *, id> *details = [self NSDictionary:json];
+  BOOL isSilent = [RCTConvert BOOL:details[@"isSilent"]];
   UILocalNotification *notification = [UILocalNotification new];
   notification.fireDate = [RCTConvert NSDate:details[@"fireDate"]] ?: [NSDate date];
   notification.alertBody = [RCTConvert NSString:details[@"alertBody"]];
   notification.alertAction = [RCTConvert NSString:details[@"alertAction"]];
-  notification.soundName = [RCTConvert NSString:details[@"soundName"]] ?: UILocalNotificationDefaultSoundName;
   notification.userInfo = [RCTConvert NSDictionary:details[@"userInfo"]];
   notification.category = [RCTConvert NSString:details[@"category"]];
   notification.repeatInterval = [RCTConvert NSCalendarUnit:details[@"repeatInterval"]];
   if (details[@"applicationIconBadgeNumber"]) {
     notification.applicationIconBadgeNumber = [RCTConvert NSInteger:details[@"applicationIconBadgeNumber"]];
+  }
+  if (!isSilent) {
+    notification.soundName = [RCTConvert NSString:details[@"soundName"]] ?: UILocalNotificationDefaultSoundName;
   }
   return notification;
 }
@@ -142,11 +145,6 @@ RCT_EXPORT_MODULE()
                                            selector:@selector(handleRemoteNotificationReceived:)
                                                name:RCTRemoteNotificationReceived
                                              object:nil];
-  [self startObservingRegistrationNotifications];
-}
-
-- (void)startObservingRegistrationNotifications
-{
   [[NSNotificationCenter defaultCenter] addObserver:self
                                            selector:@selector(handleRegisterUserNotificationSettings:)
                                                name:RCTRegisterUserNotificationSettings
@@ -281,6 +279,8 @@ RCT_EXPORT_MODULE()
   };
 
   _requestPermissionsResolveBlock(notificationTypes);
+  // Clean up listener added in requestPermissions
+  [self removeListeners:1];
   _requestPermissionsResolveBlock = nil;
 }
 
@@ -324,7 +324,8 @@ RCT_EXPORT_METHOD(requestPermissions:(NSDictionary *)permissions
     return;
   }
 
-  [self startObservingRegistrationNotifications];
+  // Add a listener to make sure that startObserving has been called
+  [self addListener:@"remoteNotificationsRegistered"];
   _requestPermissionsResolveBlock = resolve;
 
   UIUserNotificationType types = UIUserNotificationTypeNone;

@@ -16,6 +16,7 @@ const EdgeInsetsPropType = require('EdgeInsetsPropType');
 const NativeMethodsMixin = require('NativeMethodsMixin');
 const Platform = require('Platform');
 const React = require('React');
+const PropTypes = require('prop-types');
 const ReactNativeViewAttributes = require('ReactNativeViewAttributes');
 const StyleSheetPropType = require('StyleSheetPropType');
 const TextStylePropTypes = require('TextStylePropTypes');
@@ -25,8 +26,6 @@ const createReactNativeComponentClass = require('createReactNativeComponentClass
 const mergeFast = require('mergeFast');
 const processColor = require('processColor');
 
-const { PropTypes } = React;
-
 const stylePropType = StyleSheetPropType(TextStylePropTypes);
 
 const viewConfig = {
@@ -35,6 +34,7 @@ const viewConfig = {
     numberOfLines: true,
     ellipsizeMode: true,
     allowFontScaling: true,
+    disabled: true,
     selectable: true,
     selectionColor: true,
     adjustsFontSizeToFit: true,
@@ -57,7 +57,7 @@ const viewConfig = {
  * import React, { Component } from 'react';
  * import { AppRegistry, Text, StyleSheet } from 'react-native';
  *
- * class TextInANest extends Component {
+ * export default class TextInANest extends Component {
  *   constructor(props) {
  *     super(props);
  *     this.state = {
@@ -90,7 +90,7 @@ const viewConfig = {
  *   },
  * });
  *
- * // App registration and rendering
+ * // skip this line if using Create React Native App
  * AppRegistry.registerComponent('TextInANest', () => TextInANest);
  * ```
  */

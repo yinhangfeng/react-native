@@ -214,6 +214,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init);
 
 - (BOOL)hasInstance
 {
+  std::unique_lock<std::mutex> lock(_instanceLock);
   return _instance != nil;
 }
 
@@ -268,11 +269,12 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init);
         SEL selector = method_getName(method);
         if ([NSStringFromSelector(selector) hasPrefix:@"__rct_export__"]) {
           IMP imp = method_getImplementation(method);
-          NSArray<NSString *> *entries =
-            ((NSArray<NSString *> *(*)(id, SEL))imp)(_moduleClass, selector);
+          NSArray *entries =
+            ((NSArray *(*)(id, SEL))imp)(_moduleClass, selector);
           id<RCTBridgeMethod> moduleMethod =
             [[RCTModuleMethod alloc] initWithMethodSignature:entries[1]
                                                 JSMethodName:entries[0]
+                                                      isSync:((NSNumber *)entries[2]).boolValue
                                                  moduleClass:_moduleClass];
 
           [moduleMethods addObject:moduleMethod];
@@ -304,18 +306,23 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init);
   }
 }
 
-- (NSArray *)config
+- (NSDictionary<NSString *, id> *)exportedConstants
 {
   [self gatherConstants];
-  __block NSDictionary<NSString *, id> *constants = _constantsToExport;
+  NSDictionary<NSString *, id> *constants = _constantsToExport;
   _constantsToExport = nil; // Not needed anymore
+  return constants;
+}
 
+// TODO 10487027: this method can go once RCTBatchedBridge is gone
+- (NSArray *)config
+{
+  NSDictionary<NSString *, id> *constants = [self exportedConstants];
   if (constants.count == 0 && self.methods.count == 0) {
     return (id)kCFNull; // Nothing to export
   }
 
   RCT_PROFILE_BEGIN_EVENT(RCTProfileTagAlways, ([NSString stringWithFormat:@"[RCTModuleData config] %@", _moduleClass]), nil);
-
   NSMutableArray<NSString *> *methods = self.methods.count ? [NSMutableArray new] : nil;
   NSMutableArray<NSNumber *> *promiseMethods = nil;
   NSMutableArray<NSNumber *> *syncMethods = nil;
