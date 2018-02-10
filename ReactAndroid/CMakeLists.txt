@@ -7,6 +7,8 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+
 set(jni_dir ${CMAKE_SOURCE_DIR}/src/main/jni)
 
 #
@@ -22,7 +24,7 @@ add_library(boost
 target_include_directories(
   boost
   INTERFACE
-  ${boost_dir}/boost_1_63_0
+  ${boost_dir}/boost_1_66_0
 )
 
 # glog libglog.so
@@ -102,7 +104,8 @@ add_library(
   ${folly_json_dir}/folly/Unicode.cpp
   ${folly_json_dir}/folly/dynamic.cpp
   ${folly_json_dir}/folly/json.cpp
-  # ${folly_json_dir}/folly/json_pointer.cpp
+  ${folly_json_dir}/folly/Optional.cpp
+  # ${folly_json_dir}/folly/json_pointer.cpp # 最新master 需要
   ${folly_json_dir}/folly/lang/Assume.cpp
   ${folly_json_dir}/folly/lang/ColdClass.cpp
   ${folly_json_dir}/folly/memory/detail/MallocImpl.cpp
@@ -196,7 +199,7 @@ target_compile_options(
   PRIVATE
   -fexceptions -frtti -Wall -Werror -Wno-unused-parameter
   PUBLIC
-  -std=gnu++11
+  -std=c++14
 )
 target_compile_definitions(
   fb
@@ -233,9 +236,8 @@ add_library(
 )
 target_include_directories(
   jschelpers
-  PRIVATE
-  ${jsc_dir}
   PUBLIC
+  ${jsc_dir}
   ${jschelpers_dir}/..
 )
 target_compile_options(
@@ -292,6 +294,8 @@ target_compile_options(
   reactnative
   PRIVATE
   -Wall -Werror -fexceptions -frtti
+  -Wno-unused-lambda-capture
+  -Wno-non-virtual-dtor
   PUBLIC
   -std=c++14
 )
@@ -307,6 +311,7 @@ target_link_libraries(
   folly_json
   jsc
   glog
+  jsinspector
 )
 
 # yogacore
@@ -395,30 +400,33 @@ target_compile_options(
 )
 target_link_libraries(
   yoga
+  android
+  log
   yogacore
   fb
 )
 
-# gloginit libgloginit.so
-set(gloginit_dir ${jni_dir}/first-party/fbgloginit)
+# glog_init libglog_init.so
+set(glog_init_dir ${jni_dir}/first-party/fbgloginit)
 add_library(
-  gloginit
+  glog_init
   SHARED
-  ${gloginit_dir}/glog_init.cpp
+  ${glog_init_dir}/glog_init.cpp
 )
 target_include_directories(
-  gloginit
-  PUBLIC ${gloginit_dir}
+  glog_init
+  PUBLIC
+  ${glog_init_dir}
 )
 target_compile_options(
-  gloginit
+  glog_init
   PRIVATE
   -fexceptions -fno-omit-frame-pointer -Wall -Werror
   PUBLIC
-  -std=gnu++11
+  -std=c++14
 )
 target_link_libraries(
-  gloginit
+  glog_init
   log
   glog
 )
@@ -475,6 +483,7 @@ target_compile_options(
   reactnativejni
   PRIVATE
   -Wall -Werror -fvisibility=hidden -fexceptions -frtti
+  -Wno-unused-lambda-capture
   PUBLIC
   -std=c++14
 )
@@ -482,11 +491,12 @@ target_compile_options(
 target_link_libraries(
   reactnativejni
   PRIVATE
-  reactnative
+  android
   folly_json
   fb
   jsc
   glog_init
   yoga
   privatedata
+  reactnative
 )

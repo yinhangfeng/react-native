@@ -4,11 +4,12 @@
 
 #include <memory>
 
-namespace folly {
-
-class dynamic;
-
-}
+// TODO
+//namespace folly {
+//
+//class dynamic;
+//
+//}
 
 namespace facebook {
 namespace react {
