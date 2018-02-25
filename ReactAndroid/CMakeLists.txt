@@ -3,11 +3,9 @@
 
 # Sets the minimum version of CMake required to build the native library.
 
-# XXX -std=gnu++11 -std=c++14
-
 cmake_minimum_required(VERSION 3.4.1)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 set(jni_dir ${CMAKE_SOURCE_DIR}/src/main/jni)
 
@@ -257,6 +255,7 @@ target_link_libraries(
   folly_json
   jsc
   glog
+  # privatedata # xxx
 )
 
 # cxxreact(reactnative)
@@ -306,12 +305,13 @@ target_compile_definitions(
 )
 target_link_libraries(
   reactnative
+  jsc
   jschelpers
   fb
   folly_json
-  jsc
   glog
   jsinspector
+  # privatedata #xxx
 )
 
 # yogacore
@@ -360,7 +360,7 @@ target_compile_definitions(
 set(jsinspector_dir ${react_common_dir}/jsinspector)
 add_library(
   jsinspector
-  SHARED
+  SHARED # XXX
   ${jsinspector_dir}/InspectorInterfaces.cpp
 )
 target_include_directories(
@@ -432,18 +432,32 @@ target_link_libraries(
 )
 
 # packagerconnectionjnifb ?
-# set(packagerconnectionjnifb_dir ${jni_dir}/packagerconnection)
-# add_library(packagerconnectionjnifb
-#             SHARED
-#            ${packagerconnectionjnifb_dir}/JSPackagerClientResponder.h
-#            ${packagerconnectionjnifb_dir}/SamplingProfilerPackagerMethod.cpp)
-# target_include_directories(packagerconnectionjnifb
-#                            PRIVATE ${packagerconnectionjnifb_dir}/../..)
-# target_link_libraries(packagerconnectionjnifb
-#                       folly_json
-#                       fbjni
-#                       jsc
-#                       glog_init)
+#set(packagerconnectionjnifb_dir ${jni_dir}/packagerconnection)
+#add_library(
+#        packagerconnectionjnifb
+#        SHARED
+#        ${packagerconnectionjnifb_dir}/JSPackagerClientResponder.h
+#        ${packagerconnectionjnifb_dir}/SamplingProfilerJniMethod.cpp
+#)
+#target_include_directories(
+#        packagerconnectionjnifb
+#        PRIVATE ${packagerconnectionjnifb_dir}/../..
+#)
+#target_compile_options(
+#        packagerconnectionjnifb
+#        PRIVATE
+#        -Wall -Werror -fvisibility=hidden -fexceptions -frtti
+#)
+## TODO fbjni?
+#target_link_libraries(
+#        packagerconnectionjnifb
+#        PRIVATE
+#        android
+#        folly_json
+#        fb
+#        jsc
+#        glog_init
+#)
 
 # libreactnativejni.so
 set(reactnativejni_dir ${jni_dir}/react/jni)
