@@ -242,7 +242,7 @@ android {
 
         ndk {
             moduleName "reactnativejni"
-            abiFilters "armeabi-v7a"
+            abiFilters "armeabi-v7a", "arm64-v8a"
         }
 
         buildConfigField 'boolean', 'IS_INTERNAL_BUILD', 'false'
@@ -252,7 +252,7 @@ android {
 
         externalNativeBuild {
             cmake {
-                arguments '-DANDROID_STL=c++_shared' //gnustl_shared'
+                arguments '-DANDROID_STL=c++_static' //c++_shared gnustl_shared' 使用c++_static 会使每个.so 都变大不少 如何使用c++_shared 有时输出中不包含c++_shared
             }
         }
     }

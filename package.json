@@ -215,6 +215,7 @@
     "react": "16.2.0",
     "react-test-renderer": "16.2.0",
     "shelljs": "^0.7.8",
-    "sinon": "^2.2.0"
+    "sinon": "^2.2.0",
+    "jsc-android": "^216113.0.0"
   }
 }

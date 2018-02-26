@@ -93,7 +93,7 @@ android {
         versionCode 1
         versionName "1.0"
         ndk {
-            abiFilters "armeabi-v7a" //, "x86"
+            abiFilters "arm64-v8a" //"armeabi-v7a" //, "x86"
         }
     }
     signingConfigs {
@@ -131,6 +131,12 @@ android {
                         versionCodes.get(abi) * 1048576 + defaultConfig.versionCode
             }
         }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'org.webkit:android-jsc:r216113'
     }
 }
 
